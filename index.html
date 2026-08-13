@@ -110,6 +110,7 @@
   .preco { font-weight: 700; font-size: 15.5px; }
   .loja { display: inline-block; font-size: 10.5px; padding: 1px 7px; border-radius: 999px;
           background: var(--acento-suave); color: var(--acento); font-weight: 600; margin-top: 3px; }
+  .punit { font-size: 11px; color: var(--tinta-2); }
   .check { color: var(--ok); font-size: 13px; font-weight: 700; display: none; }
   .card.revisado .check { display: inline; }
 
@@ -350,6 +351,25 @@ const DECISOES = [
    {v:"extra-virgem", t:"Extra virgem Copra", d:"sabor de coco · R$ 43,83"}]}
 ];
 
+/* Base de comparação: [quantidade na unidade básica, unidade] → preço/unidade */
+const BASE = {
+ "arroz":[5,"kg"], "feijao":[1,"kg"], "acucar-coco":[0.5,"kg"], "sal":[1,"kg"],
+ "banha-porco":[1,"kg"], "oleo-coco":[0.5,"L"], "azeite":[0.5,"L"], "cafe":[0.5,"kg"],
+ "macarrao":[0.5,"kg"], "molho-tomate":[0.24,"kg"], "farinha-trigo":[1,"kg"], "leite":[12,"L"],
+ "castanhas":[0.5,"kg"], "aveia":[0.5,"kg"], "pao-forma":[0.5,"kg"], "manteiga":[0.5,"kg"],
+ "queijo-mussarela":[0.3,"kg"], "queijo-minas":[0.25,"kg"], "ovos":[20,"un"], "iogurte":[0.34,"kg"],
+ "peito-frango":[1.5,"kg"], "carne-moida":[0.5,"kg"], "carne-bife":[0.8,"kg"], "tilapia":[0.4,"kg"],
+ "detergente":[0.5,"L"], "sabao-roupa":[3,"L"], "agua-sanitaria":[2,"L"], "saco-lixo":[50,"un"],
+ "esponja":[4,"un"], "papel-higienico":[12,"rolo"], "creme-dental":[1,"un"], "sabonete":[12,"un"],
+ "shampoo":[0.35,"L"]
+};
+function precoUnit(i){
+  const b = BASE[i.id];
+  if (!b || i.preco == null) return "";
+  const v = i.preco / b[0];
+  return "R$ " + (v >= 100 ? v.toFixed(0) : v.toFixed(2)).replace(".", ",") + "/" + b[1];
+}
+
 const FREQS = [[7,"toda semana"],[15,"a cada 15 dias"],[21,"a cada 3 semanas"],[30,"todo mês"],[45,"a cada 45 dias"],[60,"a cada 2 meses"],[90,"a cada 3 meses"],[120,"a cada 4 meses"]];
 const CATS = ["Mercearia","Matinais e frios","Hortifrúti (feira)","Proteínas","Limpeza","Higiene"];
 
@@ -390,8 +410,11 @@ function cartao(i){
   const qtd = e.qtd != null ? e.qtd : i.qtd;
   const freq = e.freq != null ? e.freq : i.freq;
 
+  const pu = precoUnit(i);
   let precoHtml = i.preco != null
-    ? "<div class='preco num'>" + fmt(i.preco) + "</div><span class='loja'>" + i.loja + "</span>"
+    ? "<div class='preco num'>" + fmt(i.preco) + "</div>" +
+      (pu ? "<div class='punit num'>" + pu + "</div>" : "") +
+      "<span class='loja'>" + i.loja + "</span>"
     : "<span class='loja'>" + i.loja + "</span>";
 
   div.innerHTML =
