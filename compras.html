@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lista &amp; Compras</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0F1613; --panel:#17211D; --panel2:#1E2A25; --line:#2C3A33; --line2:#3A4C43;
+    --ink:#EAF1EC; --muted:#94A89D; --faint:#6E8377; --accent:#56D98C; --amber:#E7B24C; --teal:#5CC7C2;
+    --sans:'Manrope',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace; --maxw:1180px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;
+    background-image:radial-gradient(1100px 520px at 82% -8%, rgba(86,217,140,.07), transparent 60%)}
+  a{color:var(--accent);text-decoration:none}
+  .appbar{position:sticky;top:0;z-index:50;background:rgba(15,22,19,.94);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .appbar-in{max-width:var(--maxw);margin:0 auto;display:flex;align-items:center;gap:16px;padding:0 clamp(16px,3vw,28px);height:52px}
+  .appbar .bm{display:flex;align-items:center;gap:9px;font-weight:800;font-size:14px;letter-spacing:-.01em;white-space:nowrap;color:var(--ink)}
+  .appbar .bm .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent)}
+  .tabs{display:flex;gap:4px;margin-left:auto}
+  .tab{color:var(--muted);font-size:13.5px;font-weight:600;padding:7px 14px;border-radius:9px}
+  .tab:hover{color:var(--ink);background:var(--panel);text-decoration:none}
+  .tab.active{color:var(--accent);background:var(--panel)}
+  @media(max-width:620px){.appbar .bm .txt{display:none}.tab{padding:7px 10px;font-size:12.5px}}
+
+  .wrap{max-width:1080px;margin:0 auto;padding:34px clamp(18px,4vw,40px) 80px}
+  .eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:600;margin:0 0 10px}
+  h1{font-weight:800;font-size:clamp(26px,4vw,38px);letter-spacing:-.025em;margin:0 0 8px}
+  h2{font-weight:700;font-size:20px;letter-spacing:-.01em;margin:34px 0 14px}
+  .obs{color:var(--muted);font-size:14.5px;margin:0 0 22px;max-width:66ch}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;margin-bottom:6px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:15px 17px}
+  .stat .n{font-size:25px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .stat .n.m{color:var(--amber)} .stat .n.a{color:var(--accent)}
+  .stat .l{font-size:12.5px;color:var(--muted);margin-top:2px}
+  @media(max-width:620px){.stats{grid-template-columns:1fr}}
+  .carts{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+  .cart{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:15px 16px}
+  .cart-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+  .cart-h b{font-size:16px;font-weight:800}
+  .cart-h .sub{font-family:var(--mono);font-weight:700;color:var(--accent);font-size:15px;font-variant-numeric:tabular-nums}
+  .li{display:flex;align-items:baseline;gap:8px;padding:5px 0;font-size:14px}
+  .li .t{flex:1;min-width:0;text-transform:capitalize}
+  .li .q{font-family:var(--mono);font-size:11.5px;color:var(--faint);white-space:nowrap}
+  .li .v{font-family:var(--mono);font-size:13px;color:#D3DED6;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .local{display:flex;flex-wrap:wrap;gap:10px}
+  .loc{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 13px;font-size:14px}
+  .loc b{text-transform:capitalize} .loc span{font-family:var(--mono);font-size:12px;color:var(--faint);margin-left:6px}
+  .note{border-left:3px solid var(--amber);background:var(--panel);border-radius:0 12px 12px 0;padding:13px 16px;margin:26px 0 0;font-size:13.5px;color:var(--muted)}
+  .note b{color:var(--ink)}
+  .err{color:var(--amber);font-family:var(--mono);font-size:13px}
+</style>
+</head>
+<body>
+<script src="gate.js"></script>
+
+<header class="appbar"><div class="appbar-in">
+  <span class="bm"><span class="dot"></span><span class="txt">Automação da Casa</span></span>
+  <nav class="tabs">
+    <a href="cardapio.html" class="tab">Cardápio</a>
+    <a href="anamnese.html" class="tab">Consulta</a>
+    <a href="produtos.html" class="tab">Produtos</a>
+    <a href="compras.html" class="tab active">Compras</a>
+  </nav>
+</div></header>
+
+<div class="wrap">
+  <p class="eyebrow">Shopper · lista, carrinhos e gasto</p>
+  <h1>Lista &amp; Compras</h1>
+  <p class="obs" id="obs">Carregando…</p>
+
+  <div class="stats">
+    <div class="stat"><div class="n m" id="te">—</div><div class="l">total estimado / mês (mercado + feira)</div></div>
+    <div class="stat"><div class="n a" id="to">—</div><div class="l">otimizado — cada item na loja mais barata</div></div>
+    <div class="stat"><div class="n" id="tf">—</div><div class="l">feira / hortifrúti (estimado)</div></div>
+  </div>
+
+  <h2>Carrinhos por loja</h2>
+  <div class="carts" id="carts"></div>
+
+  <h2>Feira — hortifrúti (compra local)</h2>
+  <div class="local" id="local"></div>
+
+  <div class="note"><b>Como ler:</b> os carrinhos agrupam cada item na loja onde ele sai mais barato (valor "otimizado"). O total estimado usa um preço realista de atacarejo (percentil 30). O casamento por EAN — que aperta esse número — é o próximo refino.</div>
+</div>
+
+<script src="data/compras.js"></script>
+<script>
+  function brl(v){ return 'R$ ' + (v||0).toFixed(2).replace('.', ','); }
+  function el(id){ return document.getElementById(id); }
+  var c = window.__COMPRAS__;
+  if(!c){ el('obs').innerHTML = '<span class="err">Não carregou (data/compras.js). Rode dados/shopper.py.</span>'; }
+  else {
+    el('obs').textContent = 'Lista do mês (do cardápio) precificada nas fontes headless. Gerado em ' + (c.gerado_em||'') + '.';
+    el('te').textContent = brl(c.total_estimado + c.feira);
+    el('to').textContent = brl(c.total_barato + c.feira);
+    el('tf').textContent = brl(c.feira);
+
+    var lojas = Object.keys(c.carrinhos).sort(function(a,b){ return c.carrinhos[b].subtotal - c.carrinhos[a].subtotal; });
+    var html = '';
+    lojas.forEach(function(loja){
+      var cart = c.carrinhos[loja];
+      html += '<div class="cart"><div class="cart-h"><b>' + loja + '</b><span class="sub">' + brl(cart.subtotal) + '</span></div>';
+      cart.itens.forEach(function(it){
+        html += '<div class="li"><span class="t">' + it.termo + '</span>'
+              + '<span class="q">' + it.qtd + ' ' + it.un + '</span>'
+              + '<span class="v">' + brl(it.barato_custo) + '</span></div>';
+      });
+      html += '</div>';
+    });
+    el('carts').innerHTML = html;
+
+    el('local').innerHTML = c.local.map(function(l){
+      return '<div class="loc"><b>' + l.termo + '</b><span>' + l.qtd + ' ' + l.un + '</span></div>';
+    }).join('');
+  }
+</script>
+</body>
+</html>

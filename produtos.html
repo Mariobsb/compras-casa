@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Buscar Produtos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0F1613; --panel:#17211D; --panel2:#1E2A25; --line:#2C3A33; --line2:#3A4C43;
+    --ink:#EAF1EC; --muted:#94A89D; --faint:#6E8377; --accent:#56D98C; --amber:#E7B24C; --teal:#5CC7C2; --red:#E8896B;
+    --sans:'Manrope',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace; --maxw:1180px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;
+    background-image:radial-gradient(1100px 520px at 82% -8%, rgba(86,217,140,.07), transparent 60%)}
+  a{color:var(--accent);text-decoration:none}
+  .appbar{position:sticky;top:0;z-index:50;background:rgba(15,22,19,.94);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .appbar-in{max-width:var(--maxw);margin:0 auto;display:flex;align-items:center;gap:16px;padding:0 clamp(16px,3vw,28px);height:52px}
+  .appbar .bm{display:flex;align-items:center;gap:9px;font-weight:800;font-size:14px;letter-spacing:-.01em;white-space:nowrap;color:var(--ink)}
+  .appbar .bm .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent)}
+  .tabs{display:flex;gap:4px;margin-left:auto}
+  .tab{color:var(--muted);font-size:13.5px;font-weight:600;padding:7px 14px;border-radius:9px}
+  .tab:hover{color:var(--ink);background:var(--panel);text-decoration:none}
+  .tab.active{color:var(--accent);background:var(--panel)}
+  @media(max-width:560px){.appbar .bm .txt{display:none}.tab{padding:7px 11px;font-size:13px}}
+
+  .wrap{max-width:940px;margin:0 auto;padding:34px clamp(18px,4vw,40px) 80px}
+  .eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:600;margin:0 0 10px}
+  h1{font-weight:800;font-size:clamp(26px,4vw,38px);letter-spacing:-.025em;margin:0 0 8px}
+  .sub{color:var(--muted);font-size:14.5px;margin:0 0 20px}
+  .searchbar{position:sticky;top:52px;background:var(--bg);padding:10px 0 12px;z-index:5}
+  input#q{width:100%;background:var(--panel2);border:1px solid var(--line2);border-radius:12px;color:var(--ink);
+    font-family:var(--sans);font-size:17px;padding:14px 16px;outline:none}
+  input#q:focus{border-color:var(--accent)}
+  input#q::placeholder{color:var(--faint)}
+  .chips{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+  .chip{cursor:pointer;user-select:none;font-family:var(--mono);font-size:12px;font-weight:600;padding:5px 12px;border-radius:999px;border:1px solid var(--line2);color:var(--muted);background:transparent}
+  .chip[aria-pressed="true"]{color:var(--accent);border-color:var(--accent);background:rgba(86,217,140,.08)}
+  .count{font-family:var(--mono);font-size:12px;color:var(--faint);margin:8px 2px 4px}
+  .list{display:flex;flex-direction:column;gap:8px}
+  .prod{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;gap:13px;align-items:flex-start}
+  .thumb{width:60px;height:60px;flex:0 0 60px;border-radius:9px;object-fit:contain;background:#fff;padding:3px}
+  .thumb.noimg{display:flex;align-items:center;justify-content:center;background:var(--panel2);color:var(--faint);font-family:var(--mono);font-size:10px}
+  .pbody{flex:1;min-width:0}
+  .prod .pn{font-weight:600;font-size:15px}
+  .prod .pm{font-size:12.5px;color:var(--muted);margin-top:1px}
+  .prod .pdesc{font-size:12.5px;color:var(--faint);margin-top:5px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .prod .meta{display:flex;align-items:center;gap:8px;margin-top:7px;flex-wrap:wrap}
+  .badge{font-family:var(--mono);font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;border:1px solid}
+  .b-hi{color:var(--accent);border-color:var(--accent)} .b-mid{color:var(--amber);border-color:#6b5323} .b-lo{color:var(--red);border-color:#6b3b2c}
+  .lc{font-family:var(--mono);font-size:11px;color:var(--teal);border:1px solid #2c5a58;border-radius:6px;padding:2px 8px}
+  .ean{font-family:var(--mono);font-size:11.5px;color:var(--faint);margin-left:auto}
+  .msg{color:var(--muted);font-size:14px;padding:24px 4px}
+  .msg.err{color:var(--amber);font-family:var(--mono);font-size:13px}
+</style>
+</head>
+<body>
+<script src="gate.js"></script>
+
+<header class="appbar"><div class="appbar-in">
+  <span class="bm"><span class="dot"></span><span class="txt">Automação da Casa</span></span>
+  <nav class="tabs">
+    <a href="cardapio.html" class="tab">Cardápio</a>
+    <a href="anamnese.html" class="tab">Consulta</a>
+    <a href="produtos.html" class="tab active">Produtos</a>
+    <a href="compras.html" class="tab">Compras</a>
+  </nav>
+</div></header>
+
+<div class="wrap">
+  <p class="eyebrow">Banco de produtos · busca</p>
+  <h1>Buscar produtos</h1>
+  <p class="sub" id="sub">Carregando o índice do catálogo…</p>
+
+  <div class="searchbar">
+    <input id="q" type="search" placeholder="Buscar por nome ou marca — ex.: café, azeite, detergente…" autocomplete="off" disabled>
+    <div class="chips">
+      <span class="chip" id="cLow" role="button" aria-pressed="false">low-carb</span>
+      <span class="chip" id="cHi" role="button" aria-pressed="false">nota alta (≥80)</span>
+    </div>
+  </div>
+  <div class="count" id="count"></div>
+  <div class="list" id="list"></div>
+  <div class="msg" id="msg">Digite ao menos 2 letras para buscar.</div>
+</div>
+
+<script src="data/produtos.js"></script>
+<script>
+  var DADOS = [], pronto = false, fLow=false, fHi=false;
+  var q = document.getElementById('q'), list = document.getElementById('list'),
+      count = document.getElementById('count'), msg = document.getElementById('msg'), sub = document.getElementById('sub');
+
+  if (window.__PRODUTOS__) {
+    DADOS = window.__PRODUTOS__; pronto = true;
+    sub.textContent = DADOS.length.toLocaleString('pt-BR') + ' produtos do catálogo Dia a Dia · 100% com código de barras.';
+    q.disabled = false; q.focus();
+  } else {
+    sub.innerHTML = ''; msg.className = 'msg err';
+    msg.textContent = 'Índice não carregou (data/produtos.js). Rode dados/exportar_web.py para gerar.';
+  }
+
+  function badge(nota){
+    if(nota==null) return '';
+    var cls = nota>=80?'b-hi':(nota>=55?'b-mid':'b-lo');
+    return '<span class="badge '+cls+'">nota '+nota+'</span>';
+  }
+  function esc(s){ return (s||'').replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];}); }
+
+  function buscar(){
+    if(!pronto) return;
+    var termo = q.value.trim().toLowerCase();
+    if(termo.length < 2 && !fLow && !fHi){ list.innerHTML=''; count.textContent=''; msg.style.display='block'; msg.textContent='Digite ao menos 2 letras para buscar.'; return; }
+    var palavras = termo.split(/\s+/).filter(Boolean);
+    var res = [], LIM = 60, achou = 0;
+    for(var i=0;i<DADOS.length;i++){
+      var p = DADOS[i];
+      if(fLow && p.l!==1) continue;
+      if(fHi && !(p.q>=80)) continue;
+      if(palavras.length){
+        var hay = (p.n+' '+p.m).toLowerCase();
+        var ok = true;
+        for(var j=0;j<palavras.length;j++){ if(hay.indexOf(palavras[j])<0){ ok=false; break; } }
+        if(!ok) continue;
+      }
+      achou++;
+      if(res.length<LIM) res.push(p);
+    }
+    msg.style.display = achou? 'none':'block';
+    if(!achou){ list.innerHTML=''; count.textContent=''; msg.textContent='Nada encontrado.'; return; }
+    count.textContent = 'mostrando '+res.length+' de '+achou.toLocaleString('pt-BR');
+    var html='';
+    for(var k=0;k<res.length;k++){
+      var p=res[k];
+      html += '<div class="prod" data-nome="'+esc(p.n)+'">'
+            + (p.i?'<img class="thumb" loading="lazy" src="https://atacadaobr.vtexassets.com/arquivos/ids/'+p.i+'-96-96/p.jpg" alt="" onerror="this.style.visibility=\'hidden\'">':'<div class="thumb noimg">sem foto</div>')
+            + '<div class="pbody"><div class="pn">'+esc(p.n)+'</div>'
+            + '<div class="pm">'+esc(p.m||'—')+' · '+esc(p.c||'')+'</div>'
+            + (p.d?'<div class="pdesc">'+esc(p.d)+'</div>':'')
+            + '<div class="meta">'+badge(p.q)
+            + (p.l===1?'<span class="lc">low-carb</span>':'')
+            + (p.e?'<span class="ean">'+esc(p.e)+'</span>':'')
+            + '</div></div></div>';
+    }
+    list.innerHTML = html;
+  }
+
+  var t; q.addEventListener('input', function(){ clearTimeout(t); t=setTimeout(buscar,140); });
+  document.getElementById('cLow').addEventListener('click', function(){ fLow=!fLow; this.setAttribute('aria-pressed',fLow); buscar(); });
+  document.getElementById('cHi').addEventListener('click', function(){ fHi=!fHi; this.setAttribute('aria-pressed',fHi); buscar(); });
+</script>
+
+<!-- Camada interativa: só liga quando servido pelo backend FastAPI (no git estático fica só a busca) -->
+<div class="drawer" id="drawer">
+  <div class="dh"><b id="dtitle">Preços</b><span class="dx" onclick="fecharDrawer()">✕</span></div>
+  <div id="dbody"></div>
+</div>
+<button class="cartbtn" id="cartbtn" onclick="verCarrinho()" style="display:none">🛒 <span id="cartn">0</span></button>
+<style>
+  body.backend .prod{cursor:pointer}
+  body.backend .prod:hover{border-color:var(--line2);background:var(--panel2)}
+  .drawer{position:fixed;left:0;right:0;bottom:0;max-width:540px;margin:0 auto;background:var(--panel2);border:1px solid var(--line2);border-bottom:none;border-radius:16px 16px 0 0;padding:15px 18px 24px;transform:translateY(120%);transition:transform .25s ease;z-index:60;box-shadow:0 -12px 44px rgba(0,0,0,.45)}
+  .drawer.open{transform:translateY(0)}
+  .dh{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}
+  .dh b{font-size:15px;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dx{cursor:pointer;color:var(--muted);font-size:18px;flex:0 0 auto}
+  .prow{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+  .prow:last-child{border-bottom:none}
+  .prow .pl{flex:1;min-width:0} .prow .pl b{font-weight:600;font-size:14px}
+  .prow .pl small{display:block;color:var(--faint);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .prow .pp{font-family:var(--mono);font-size:14px;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .prow.barato .pp{color:var(--accent);font-weight:700}
+  .padd{background:var(--accent);color:#08120c;border:none;border-radius:8px;font-weight:800;font-size:14px;padding:5px 12px;cursor:pointer;flex:0 0 auto}
+  .padd:active{transform:scale(.94)}
+  .cartbtn{position:fixed;right:18px;bottom:18px;z-index:55;background:var(--accent);color:#08120c;border:none;border-radius:999px;font-weight:800;font-size:15px;padding:11px 18px;cursor:pointer;box-shadow:0 6px 22px rgba(86,217,140,.4)}
+  .dload{color:var(--muted);font-size:13px;padding:16px 2px;font-family:var(--mono)}
+</style>
+<script>
+  var BACKEND=false, CUR={nome:'',lojas:[]};
+  function money(v){ return (v==null)?'—':('R$ '+Number(v).toFixed(2).replace('.',',')); }
+  function setCart(n){ document.getElementById('cartn').textContent=n; }
+  function fecharDrawer(){ document.getElementById('drawer').classList.remove('open'); }
+  fetch('/api/health').then(function(r){return r.json();}).then(function(h){
+    if(h&&h.ok){ BACKEND=true; document.body.classList.add('backend');
+      document.getElementById('cartbtn').style.display='block'; setCart(h.carrinho||0); }
+  }).catch(function(){});
+  document.getElementById('list').addEventListener('click', function(e){
+    if(!BACKEND) return; var c=e.target.closest('.prod'); if(!c) return;
+    abrirPrecos(c.getAttribute('data-nome'));
+  });
+  function abrirPrecos(nome){
+    var d=document.getElementById('drawer'), body=document.getElementById('dbody');
+    document.getElementById('dtitle').textContent=nome;
+    body.innerHTML='<div class="dload">buscando preços ao vivo nas lojas…</div>'; d.classList.add('open');
+    fetch('/api/precos?termo='+encodeURIComponent(nome)).then(function(r){return r.json();}).then(function(res){
+      CUR={nome:nome, lojas:(res.lojas||[]).filter(function(x){return x.preco;})};
+      if(!CUR.lojas.length){ body.innerHTML='<div class="dload">nenhuma loja retornou preço.</div>'; return; }
+      body.innerHTML = CUR.lojas.map(function(x,i){
+        var eff=x.promo||x.preco;
+        var extra = x.promo?' <span style="color:var(--amber)">promo</span>':(x.atacado?' <span style="color:var(--faint)">atac '+money(x.atacado)+'</span>':'');
+        return '<div class="prow'+(x.barato?' barato':'')+'"><div class="pl"><b>'+x.loja+'</b>'
+             + '<small>'+((x.produto||'').slice(0,44))+' · '+(x.pu||'')+'</small></div>'
+             + '<div class="pp">'+money(eff)+extra+'</div>'
+             + '<button class="padd" data-i="'+i+'">＋</button></div>';
+      }).join('');
+    }).catch(function(){ body.innerHTML='<div class="dload">erro ao buscar preços.</div>'; });
+  }
+  document.getElementById('dbody').addEventListener('click', function(e){
+    var b=e.target.closest('.padd'); if(!b||b.dataset.i==null) return;
+    var x=CUR.lojas[+b.dataset.i]; if(!x) return;
+    fetch('/api/carrinho',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({loja:x.loja,produto:x.produto,preco:(x.promo||x.preco),termo:CUR.nome})})
+      .then(function(r){return r.json();}).then(function(d){ setCart(d.n); b.textContent='✓'; });
+  });
+  function verCarrinho(){
+    var d=document.getElementById('drawer'), body=document.getElementById('dbody');
+    document.getElementById('dtitle').textContent='Carrinho da família';
+    body.innerHTML='<div class="dload">carregando…</div>'; d.classList.add('open');
+    fetch('/api/carrinho').then(function(r){return r.json();}).then(function(c){
+      if(!c.itens.length){ body.innerHTML='<div class="dload">carrinho vazio — clique num produto para ver preços e adicionar.</div>'; return; }
+      body.innerHTML = c.itens.map(function(it){
+        return '<div class="prow"><div class="pl"><b>'+(it.termo||it.produto||'')+'</b><small>'+(it.loja||'')+'</small></div><div class="pp">'+money(it.preco)+'</div></div>';
+      }).join('') + '<div class="prow"><div class="pl"><b>Total</b></div><div class="pp" style="color:var(--accent);font-weight:700">'+money(c.total)+'</div></div>'
+        + '<div style="margin-top:14px;text-align:right"><button class="padd" style="background:var(--panel);color:var(--muted)" onclick="limparCarrinho()">limpar</button></div>';
+    });
+  }
+  function limparCarrinho(){ fetch('/api/carrinho',{method:'DELETE'}).then(function(r){return r.json();}).then(function(){ setCart(0); verCarrinho(); }); }
+</script>
+</body>
+</html>

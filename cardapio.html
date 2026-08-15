@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cardápio do Mês</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0F1613; --panel:#17211D; --panel2:#1E2A25; --line:#2C3A33; --line2:#3A4C43;
+    --ink:#EAF1EC; --muted:#94A89D; --faint:#6E8377; --accent:#56D98C; --amber:#E7B24C; --teal:#5CC7C2; --rose:#E58A8A;
+    --sans:'Manrope',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace; --maxw:1180px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;
+    background-image:radial-gradient(1100px 520px at 82% -8%, rgba(86,217,140,.07), transparent 60%)}
+  a{color:var(--accent);text-decoration:none}
+  .appbar{position:sticky;top:0;z-index:50;background:rgba(15,22,19,.94);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .appbar-in{max-width:var(--maxw);margin:0 auto;display:flex;align-items:center;gap:16px;padding:0 clamp(16px,3vw,28px);height:52px}
+  .appbar .bm{display:flex;align-items:center;gap:9px;font-weight:800;font-size:14px;letter-spacing:-.01em;white-space:nowrap;color:var(--ink)}
+  .appbar .bm .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent)}
+  .tabs{display:flex;gap:4px;margin-left:auto;overflow-x:auto}
+  .tab{color:var(--muted);font-size:13.5px;font-weight:600;padding:7px 14px;border-radius:9px;white-space:nowrap}
+  .tab:hover{color:var(--ink);background:var(--panel);text-decoration:none}
+  .tab.active{color:var(--accent);background:var(--panel)}
+  @media(max-width:640px){.appbar .bm .txt{display:none}.tab{padding:7px 10px;font-size:12.5px}}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:34px clamp(18px,4vw,40px) 80px}
+  .eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:600;margin:0 0 10px}
+  h1{font-weight:800;font-size:clamp(26px,4vw,38px);letter-spacing:-.025em;margin:0 0 10px}
+  .obs{color:var(--muted);max-width:72ch;margin:0 0 22px;font-size:15px}
+  /* resumo */
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(146px,1fr));gap:10px;margin:0 0 18px}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:12px 14px}
+  .kpi b{display:block;font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1.2}
+  .kpi span{font-size:11.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.08em;font-family:var(--mono)}
+  .prot{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 22px}
+  .prot i{font-style:normal;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:12.5px;color:var(--muted)}
+  .prot i b{color:var(--ink)}
+  /* controles */
+  .ctrl{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 18px}
+  .ctrl button{background:var(--panel);border:1px solid var(--line);color:var(--muted);border-radius:9px;padding:7px 14px;font-family:var(--sans);font-size:13.5px;font-weight:600;cursor:pointer}
+  .ctrl button.on{background:rgba(86,217,140,.13);border-color:var(--accent);color:var(--accent)}
+  .ctrl .sp{margin-left:auto;font-size:13px;color:var(--faint)}
+  /* semanas */
+  .semana{margin:0 0 26px}
+  .semana>h3{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin:0 0 10px;font-weight:600}
+  .week{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:12px}
+  .day{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:14px 15px;transition:border-color .15s}
+  .day:hover{border-color:var(--line2)}
+  .day.hoje{border-color:var(--accent);box-shadow:0 0 0 1px rgba(86,217,140,.25)}
+  .day.fds{background:var(--panel2)}
+  .day-h{display:flex;align-items:baseline;justify-content:space-between;margin:0 0 10px;padding-bottom:9px;border-bottom:1px solid var(--line)}
+  .day-h b{font-size:15.5px;font-weight:800;letter-spacing:-.01em}
+  .day-h span{font-family:var(--mono);font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.09em}
+  .meal{padding:6px 0}
+  .meal .ml{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--faint);font-weight:700;margin-bottom:2px}
+  .meal .dish{font-size:14px;color:#D8E3DB;cursor:pointer;border-bottom:1px dotted transparent}
+  .meal .dish:hover{color:var(--accent);border-bottom-color:var(--accent)}
+  .meal .side{font-size:12.5px;color:var(--muted)}
+  .meal.snack{background:rgba(231,180,76,.08);border:1px solid rgba(231,180,76,.26);border-radius:9px;padding:8px 10px;margin:5px 0}
+  .meal.snack .ml{color:var(--amber)}
+  .meal.main .dish{font-weight:600;font-size:14.5px}
+  .fav{color:var(--amber);font-size:11px}
+  /* modal */
+  .ov{position:fixed;inset:0;background:rgba(6,10,8,.78);backdrop-filter:blur(4px);z-index:100;display:none;align-items:flex-start;justify-content:center;padding:38px 16px;overflow-y:auto}
+  .ov.on{display:flex}
+  .card{background:var(--panel);border:1px solid var(--line2);border-radius:18px;max-width:660px;width:100%;padding:24px 26px 30px}
+  .card h2{font-size:23px;font-weight:800;letter-spacing:-.02em;margin:0 0 4px}
+  .card .sub{color:var(--muted);font-size:14.5px;margin:0 0 14px}
+  .card .metas{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 18px}
+  .card .metas i{font-style:normal;font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:4px 9px;color:var(--muted)}
+  .card h4{font-size:11.5px;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:20px 0 8px;font-weight:600}
+  .card ul{margin:0;padding-left:20px}
+  .card li{margin:3px 0;font-size:14.5px;color:#D8E3DB}
+  .card ol li{margin:7px 0}
+  .card .adapt{background:var(--panel2);border-left:3px solid var(--teal);border-radius:0 9px 9px 0;padding:10px 13px;margin:7px 0;font-size:14px;color:#CBD8CF}
+  .card .adapt b{color:var(--teal)}
+  .card .adapt.kid{border-left-color:var(--amber)}.card .adapt.kid b{color:var(--amber)}
+  .card .nut{display:grid;grid-template-columns:repeat(auto-fit,minmax(78px,1fr));gap:7px}
+  .card .nut div{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:8px;text-align:center}
+  .card .nut b{display:block;font-size:16px;font-weight:800}
+  .card .nut span{font-size:10px;color:var(--faint);font-family:var(--mono);text-transform:uppercase}
+  .card .fechar{float:right;background:none;border:1px solid var(--line2);color:var(--muted);border-radius:8px;width:32px;height:32px;font-size:17px;cursor:pointer;line-height:1}
+  .alts{display:flex;gap:6px;flex-wrap:wrap}
+  .alts button{background:var(--panel2);border:1px solid var(--line2);color:var(--muted);border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:12.5px;cursor:pointer}
+  .alts button:hover{border-color:var(--accent);color:var(--accent)}
+  .err{color:var(--amber);font-family:var(--mono);font-size:13px}
+  footer{border-top:1px solid var(--line);margin-top:40px;padding:22px 0;color:var(--faint);font-size:12.5px;font-family:var(--mono)}
+</style>
+</head>
+<body>
+<script src="gate.js"></script>
+
+<header class="appbar"><div class="appbar-in">
+  <span class="bm"><span class="dot"></span><span class="txt">Automação da Casa</span></span>
+  <nav class="tabs">
+    <a href="cardapio.html" class="tab active">Cardápio</a>
+    <a href="anamnese.html" class="tab">Consulta</a>
+    <a href="produtos.html" class="tab">Produtos</a>
+    <a href="compras.html" class="tab">Compras</a>
+  </nav>
+</div></header>
+
+<div class="wrap">
+  <p class="eyebrow">Nutricionista · cardápio do mês</p>
+  <h1 id="titulo">Cardápio</h1>
+  <p class="obs" id="obs">Carregando…</p>
+
+  <div class="kpis" id="kpis"></div>
+  <div class="prot" id="prot"></div>
+
+  <div class="ctrl" id="ctrl">
+    <button id="b-tudo" class="on" onclick="filtro('tudo')">Tudo</button>
+    <button id="b-almoco" onclick="filtro('almoco')">Só almoço</button>
+    <button id="b-lanche" onclick="filtro('lanche_escola')">Só lanche da escola</button>
+    <button onclick="irHoje()">Ir para hoje</button>
+    <span class="sp">clique num prato para ver a receita completa</span>
+  </div>
+
+  <div id="mes"></div>
+  <footer id="rodape"></footer>
+</div>
+
+<div class="ov" id="ov" onclick="if(event.target===this) fechar()"><div class="card" id="card"></div></div>
+
+<script src="data/cardapio.js"></script>
+<script>
+var C = window.__CARDAPIO__;
+var MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+var ICON = {cafe:'☕', lanche_escola:'🎒', almoco:'🍽️', jantar:'🌙', sobremesa:'🍮'};
+var VER = 'tudo';
+var HOJE = new Date().toISOString().slice(0,10);
+
+function esc(s){ var d=document.createElement('div'); d.textContent = s==null?'':s; return d.innerHTML; }
+
+function fmtQtd(i){
+  if (i.qtd == null) return i.item;
+  var q = i.qtd, u = i.un || '';
+  if (u === 'g' && q >= 1000) { q = (q/1000).toFixed(2).replace(/\.?0+$/,''); u = 'kg'; }
+  else if (u === 'ml' && q >= 1000) { q = (q/1000).toFixed(2).replace(/\.?0+$/,''); u = 'L'; }
+  else { q = (Math.round(q*10)/10).toString().replace(/\.0$/,''); }
+  u = u.replace('colher_sopa','col. sopa').replace('colher_cha','col. chá').replace('xicara','xícara').replace('a_gosto','');
+  return (String(q)+' '+u).trim() + ' de ' + i.item;
+}
+
+function receita(id){
+  var r = (C.receitas || {})[id];
+  if (!r) return;
+  var h = ['<button class="fechar" onclick="fechar()">×</button>'];
+  h.push('<h2>' + esc(r.nome) + '</h2>');
+  if (r.descricao) h.push('<p class="sub">' + esc(r.descricao) + '</p>');
+  var m = [];
+  if (r.tempo_min) m.push('⏱ ' + r.tempo_min + ' min');
+  if (r.tempo_ativo_min) m.push('👐 ' + r.tempo_ativo_min + ' min de trabalho');
+  if (r.rendimento) m.push('🍴 ' + r.rendimento + ' porções');
+  if (r.dificuldade) m.push(r.dificuldade);
+  (r.tags||[]).forEach(function(t){ m.push(t.replace(/_/g,' ')); });
+  h.push('<div class="metas">' + m.map(function(x){return '<i>'+esc(x)+'</i>';}).join('') + '</div>');
+
+  h.push('<h4>Ingredientes</h4><ul>');
+  (r.ingredientes||[]).forEach(function(i){
+    h.push('<li>' + esc(fmtQtd(i)) + (i.preparo ? ' <span style="color:var(--faint)">(' + esc(i.preparo) + ')</span>' : '') + (i.opcional ? ' <span style="color:var(--faint)">— opcional</span>' : '') + '</li>');
+  });
+  h.push('</ul>');
+
+  h.push('<h4>Modo de preparo</h4><ol>');
+  (r.modo_preparo||[]).forEach(function(p){ h.push('<li>' + esc(p) + '</li>'); });
+  h.push('</ol>');
+
+  if (r.dica) h.push('<h4>Dica</h4><p style="font-size:14.5px;color:#D8E3DB;margin:0">💡 ' + esc(r.dica) + '</p>');
+
+  var a = r.adaptacoes || {};
+  if (a.vicencia_perda_peso || a.criancas_sem_acucar || a.mario_low_carb) {
+    h.push('<h4>Ajustes por pessoa</h4>');
+    if (a.vicencia_perda_peso) h.push('<div class="adapt"><b>Vicência</b> — ' + esc(a.vicencia_perda_peso) + '</div>');
+    if (a.criancas_sem_acucar) h.push('<div class="adapt kid"><b>Helena e Maitê</b> — ' + esc(a.criancas_sem_acucar) + '</div>');
+    if (a.mario_low_carb) h.push('<div class="adapt"><b>Mário</b> — ' + esc(a.mario_low_carb) + '</div>');
+  }
+
+  if ((r.substituicoes||[]).length) {
+    h.push('<h4>Se faltar ingrediente</h4><ul>');
+    r.substituicoes.forEach(function(s){
+      h.push('<li>' + esc(s.trocar) + ' → <b>' + esc(s.por) + '</b>' + (s.motivo ? ' <span style="color:var(--faint)">(' + esc(s.motivo) + ')</span>' : '') + '</li>');
+    });
+    h.push('</ul>');
+  }
+
+  var n = r.nutricao || {};
+  if (n.kcal) {
+    h.push('<h4>Por porção</h4><div class="nut">');
+    [['kcal','kcal'],['proteina_g','proteína'],['carboidrato_g','carbo'],['fibra_g','fibra'],['gordura_g','gordura'],['acucar_adicionado_g','açúcar add']].forEach(function(p){
+      if (n[p[0]] != null) h.push('<div><b>' + n[p[0]] + '</b><span>' + p[1] + '</span></div>');
+    });
+    h.push('</div>');
+  }
+  if (r.sobras) h.push('<h4>Sobras</h4><p style="font-size:14.5px;color:#D8E3DB;margin:0">♻️ ' + esc(r.sobras) + '</p>');
+
+  document.getElementById('card').innerHTML = h.join('');
+  document.getElementById('ov').classList.add('on');
+  document.getElementById('card').scrollIntoView({block:'start'});
+}
+function fechar(){ document.getElementById('ov').classList.remove('on'); }
+document.addEventListener('keydown', function(e){ if (e.key === 'Escape') fechar(); });
+
+function filtro(v){
+  VER = v;
+  ['tudo','almoco','lanche'].forEach(function(k){
+    var b = document.getElementById('b-'+k);
+    if (b) b.className = (v === k || (v==='lanche_escola' && k==='lanche')) ? 'on' : '';
+  });
+  render();
+}
+function irHoje(){
+  var el = document.getElementById('d-' + HOJE);
+  if (el) el.scrollIntoView({behavior:'smooth', block:'center'});
+  else alert('Hoje não está neste mês do cardápio.');
+}
+
+function render(){
+  var mes = document.getElementById('mes'); mes.innerHTML = '';
+  var semana = null, ultimaSem = -1, n = 0;
+  C.dias.forEach(function(d){
+    var dt = new Date(d.data + 'T12:00:00');
+    var sem = Math.floor((dt.getDate() + (new Date(C.ano, C.mes-1, 1).getDay() + 6) % 7 - 1) / 7);
+    if (sem !== ultimaSem) {
+      ultimaSem = sem; n++;
+      var box = document.createElement('div'); box.className = 'semana';
+      box.innerHTML = '<h3>Semana ' + n + '</h3>';
+      semana = document.createElement('div'); semana.className = 'week';
+      box.appendChild(semana); mes.appendChild(box);
+    }
+    var day = document.createElement('div');
+    day.className = 'day' + (d.dia_util ? '' : ' fds') + (d.data === HOJE ? ' hoje' : '');
+    day.id = 'd-' + d.data;
+    var dia = d.data.slice(8,10) + '/' + d.data.slice(5,7);
+    day.innerHTML = '<div class="day-h"><b>' + d.dia_semana + ' ' + dia + '</b><span>' +
+      (d.letivo ? 'aula' : (d.dia_util ? '' : 'fim de semana')) + '</span></div>';
+
+    C.refeicoes.forEach(function(ref){
+      var r = d.refeicoes[ref];
+      if (!r) return;
+      if (VER === 'almoco' && ref !== 'almoco') return;
+      if (VER === 'lanche_escola' && ref !== 'lanche_escola') return;
+      var snack = ref === 'lanche_escola';
+      var m = document.createElement('div');
+      m.className = 'meal' + (snack ? ' snack' : '') + (ref === 'almoco' ? ' main' : '');
+      var fav = (r.tags || []).indexOf('favorito_criancas') >= 0 ? ' <span class="fav">★</span>' : '';
+      var html = '<div class="ml">' + (ICON[ref]||'') + ' ' + (C.rotulos[ref]||ref) + '</div>' +
+                 '<div class="dish" onclick="receita(\'' + r.prato + '\')">' + esc(r.nome) + fav + '</div>';
+      if ((r.acompanhamentos||[]).length) {
+        html += '<div class="side">com ' + r.acompanhamentos.map(function(a){
+          return '<span class="dish" style="font-size:12.5px" onclick="receita(\'' + a.prato + '\')">' + esc(a.nome) + '</span>';
+        }).join(' · ') + '</div>';
+      }
+      m.innerHTML = html;
+      day.appendChild(m);
+    });
+    semana.appendChild(day);
+  });
+}
+
+if (!C) {
+  document.getElementById('obs').innerHTML = '<span class="err">Cardápio não carregou (data/cardapio.js). Rode dados/exportar_web.py.</span>';
+} else {
+  document.getElementById('titulo').textContent = 'Cardápio de ' + MESES[C.mes-1] + ' de ' + C.ano;
+  document.getElementById('obs').textContent = C.obs || '';
+  var s = C.resumo || {};
+  var kp = [[s.dias, 'dias'], [s.receitas_distintas, 'receitas distintas'],
+            [s.dias_letivos, 'lanches de escola'], [s.favoritos_criancas_no_mes, 'pratos favoritos'],
+            [s.repertorio_disponivel, 'no repertório']];
+  document.getElementById('kpis').innerHTML = kp.filter(function(k){return k[0]!=null;})
+    .map(function(k){ return '<div class="kpi"><b>' + k[0] + '</b><span>' + k[1] + '</span></div>'; }).join('');
+  var p = s.almocos_por_proteina || {};
+  document.getElementById('prot').innerHTML = Object.keys(p).filter(function(k){return k && k!=='null';})
+    .sort(function(a,b){return p[b]-p[a];})
+    .map(function(k){ return '<i>' + k.replace(/_/g,' ') + ' <b>' + p[k] + '</b></i>'; }).join('');
+  document.getElementById('rodape').textContent =
+    'Gerado em ' + (C.gerado_em||'') + ' · ' + (C.versao||'') + ' · ★ = prato campeão das crianças · clique num prato para a receita completa';
+  render();
+}
+</script>
+</body>
+</html>
