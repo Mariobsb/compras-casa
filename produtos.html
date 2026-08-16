@@ -40,6 +40,9 @@
   .chips{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
   .chip{cursor:pointer;user-select:none;font-family:var(--mono);font-size:12px;font-weight:600;padding:5px 12px;border-radius:999px;border:1px solid var(--line2);color:var(--muted);background:transparent}
   .chip[aria-pressed="true"]{color:var(--accent);border-color:var(--accent);background:rgba(86,217,140,.08)}
+  .filtros{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center}
+  select#cat{background:var(--panel2);border:1px solid var(--line2);color:var(--ink);border-radius:999px;font-family:var(--mono);font-size:12px;font-weight:600;padding:6px 12px;max-width:100%;cursor:pointer;outline:none}
+  select#cat:focus{border-color:var(--accent)}
   .count{font-family:var(--mono);font-size:12px;color:var(--faint);margin:8px 2px 4px}
   .list{display:flex;flex-direction:column;gap:8px}
   .prod{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;gap:13px;align-items:flex-start}
@@ -78,7 +81,8 @@
 
   <div class="searchbar">
     <input id="q" type="search" placeholder="Buscar por nome ou marca — ex.: café, azeite, detergente…" autocomplete="off" disabled>
-    <div class="chips">
+    <div class="filtros">
+      <select id="cat" title="Filtrar por categoria"><option value="">Todas as categorias</option></select>
       <span class="chip" id="cLow" role="button" aria-pressed="false">low-carb</span>
       <span class="chip" id="cHi" role="button" aria-pressed="false">nota alta (≥80)</span>
     </div>
@@ -92,11 +96,24 @@
 <script>
   var DADOS = [], pronto = false, fLow=false, fHi=false;
   var q = document.getElementById('q'), list = document.getElementById('list'),
-      count = document.getElementById('count'), msg = document.getElementById('msg'), sub = document.getElementById('sub');
+      count = document.getElementById('count'), msg = document.getElementById('msg'),
+      sub = document.getElementById('sub'), catSel = document.getElementById('cat');
+
+  function norm(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
+  function esc(s){ return (s||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 
   if (window.__PRODUTOS__) {
     DADOS = window.__PRODUTOS__; pronto = true;
-    sub.textContent = DADOS.length.toLocaleString('pt-BR') + ' produtos do catálogo Dia a Dia · 100% com código de barras.';
+    var catmap = {};
+    for(var i=0;i<DADOS.length;i++){
+      var p=DADOS[i]; p._n=norm(p.n); p._h=norm(p.n+' '+(p.m||''));
+      if(p.c) catmap[p.c]=(catmap[p.c]||0)+1;
+    }
+    var cats = Object.keys(catmap).sort(function(a,b){ return a.localeCompare(b,'pt'); });
+    var opt = '<option value="">Todas as categorias ('+DADOS.length.toLocaleString('pt-BR')+')</option>';
+    for(var i=0;i<cats.length;i++){ opt += '<option value="'+esc(cats[i])+'">'+esc(cats[i])+' ('+catmap[cats[i]]+')</option>'; }
+    catSel.innerHTML = opt;
+    sub.textContent = DADOS.length.toLocaleString('pt-BR') + ' produtos · busque por nome/marca ou escolha uma categoria.';
     q.disabled = false; q.focus();
   } else {
     sub.innerHTML = ''; msg.className = 'msg err';
@@ -108,29 +125,53 @@
     var cls = nota>=80?'b-hi':(nota>=55?'b-mid':'b-lo');
     return '<span class="badge '+cls+'">nota '+nota+'</span>';
   }
-  function esc(s){ return (s||'').replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];}); }
+
+  // relevância: nome que começa com o termo > palavra inteira > começo de palavra > em qualquer lugar
+  function score(p, qfull, words){
+    var name=p._n, hay=p._h, s=0, pad=' '+name+' ';
+    if(name.lastIndexOf(qfull,0)===0) s+=60;
+    else if(name.indexOf(qfull)>=0) s+=25;
+    for(var i=0;i<words.length;i++){
+      var w=words[i];
+      if(pad.indexOf(' '+w+' ')>=0) s+=10;
+      else if(pad.indexOf(' '+w)>=0) s+=6;
+      else if(hay.indexOf(w)>=0) s+=2;
+    }
+    s += (p.q||0)/40;        // desempate: melhor qualidade
+    s -= name.length/300;    // nomes mais concisos (match mais específico) primeiro
+    return s;
+  }
 
   function buscar(){
     if(!pronto) return;
-    var termo = q.value.trim().toLowerCase();
-    if(termo.length < 2 && !fLow && !fHi){ list.innerHTML=''; count.textContent=''; msg.style.display='block'; msg.textContent='Digite ao menos 2 letras para buscar.'; return; }
-    var palavras = termo.split(/\s+/).filter(Boolean);
-    var res = [], LIM = 60, achou = 0;
+    var termo = norm(q.value.trim()), cat = catSel.value;
+    var words = termo.split(/\s+/).filter(Boolean);
+    if(!words.length && !cat && !fLow && !fHi){
+      list.innerHTML=''; count.textContent=''; msg.style.display='block';
+      msg.textContent='Digite algo ou escolha uma categoria.'; return;
+    }
+    var matches = [];
     for(var i=0;i<DADOS.length;i++){
       var p = DADOS[i];
       if(fLow && p.l!==1) continue;
       if(fHi && !(p.q>=80)) continue;
-      if(palavras.length){
-        var hay = (p.n+' '+p.m).toLowerCase();
-        var ok = true;
-        for(var j=0;j<palavras.length;j++){ if(hay.indexOf(palavras[j])<0){ ok=false; break; } }
+      if(cat && p.c!==cat) continue;
+      if(words.length){
+        var ok=true; for(var j=0;j<words.length;j++){ if(p._h.indexOf(words[j])<0){ ok=false; break; } }
         if(!ok) continue;
       }
-      achou++;
-      if(res.length<LIM) res.push(p);
+      matches.push(p);
+    }
+    var achou = matches.length;
+    if(words.length){
+      for(var m=0;m<matches.length;m++){ matches[m]._s = score(matches[m], termo, words); }
+      matches.sort(function(a,b){ return b._s - a._s; });
+    } else {
+      matches.sort(function(a,b){ return (b.q||0) - (a.q||0); });   // categoria só: melhores notas primeiro
     }
     msg.style.display = achou? 'none':'block';
     if(!achou){ list.innerHTML=''; count.textContent=''; msg.textContent='Nada encontrado.'; return; }
+    var res = matches.slice(0, 60);
     count.textContent = 'mostrando '+res.length+' de '+achou.toLocaleString('pt-BR');
     var html='';
     for(var k=0;k<res.length;k++){
@@ -139,7 +180,6 @@
             + (p.i?'<img class="thumb" loading="lazy" src="https://atacadaobr.vtexassets.com/arquivos/ids/'+p.i+'-96-96/p.jpg" alt="" onerror="this.style.visibility=\'hidden\'">':'<div class="thumb noimg">sem foto</div>')
             + '<div class="pbody"><div class="pn">'+esc(p.n)+'</div>'
             + '<div class="pm">'+esc(p.m||'—')+' · '+esc(p.c||'')+'</div>'
-            + (p.d?'<div class="pdesc">'+esc(p.d)+'</div>':'')
             + '<div class="meta">'+badge(p.q)
             + (p.l===1?'<span class="lc">low-carb</span>':'')
             + (p.e?'<span class="ean">'+esc(p.e)+'</span>':'')
@@ -148,7 +188,9 @@
     list.innerHTML = html;
   }
 
-  var t; q.addEventListener('input', function(){ clearTimeout(t); t=setTimeout(buscar,140); });
+  var t;
+  q.addEventListener('input', function(){ clearTimeout(t); t=setTimeout(buscar,140); });
+  catSel.addEventListener('change', buscar);
   document.getElementById('cLow').addEventListener('click', function(){ fLow=!fLow; this.setAttribute('aria-pressed',fLow); buscar(); });
   document.getElementById('cHi').addEventListener('click', function(){ fHi=!fHi; this.setAttribute('aria-pressed',fHi); buscar(); });
 </script>
