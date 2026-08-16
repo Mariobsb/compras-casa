@@ -243,6 +243,10 @@
 <script>
   // ===== LISTAS (client-side, localStorage — funciona no site público) =====
   var KEY='casa_listas', BACKEND=false, CURP=null;
+  // Preço ao vivo: backend local (tailnet) quando existir; senão o Worker público (workers.dev).
+  var WORKER='https://precos-casa.automercadomario.workers.dev';   // Worker de preços ao vivo (Cloudflare)
+  function precosOn(){ return BACKEND || !!WORKER; }
+  function precoURL(t){ return (BACKEND?'/api/precos?termo=':WORKER+'/precos?termo=')+encodeURIComponent(t); }
   var drawer=document.getElementById('drawer'), dbody=document.getElementById('dbody'), dtitle=document.getElementById('dtitle');
   function getL(){ try{ var o=JSON.parse(localStorage.getItem(KEY)); if(o&&typeof o==='object'){ if(!o['Favoritos'])o['Favoritos']=[]; return o; } }catch(e){} return {'Favoritos':[]}; }
   function setL(o){ localStorage.setItem(KEY, JSON.stringify(o)); }
@@ -274,10 +278,10 @@
     var chips=Object.keys(o).map(function(nm){ return '<button class="lchip'+(estaNa(o[nm],p)?' on':'')+'" data-lista="'+esc2(nm)+'">'+esc2(nm)+'</button>'; }).join('')
       + '<button class="lchip nova" data-nova="1">＋ nova lista</button>';
     dbody.innerHTML='<div class="dsec">Salvar numa lista</div><div class="lchips">'+chips+'</div>'
-      + (BACKEND?'<div class="dsec" style="margin-top:18px">Preço nas lojas</div><div id="precos"><div class="dload">buscando…</div></div>':'');
+      + (precosOn()?'<div class="dsec" style="margin-top:18px">Preço nas lojas</div><div id="precos"><div class="dload">buscando…</div></div>':'');
     drawer.classList.add('open');
-    if(BACKEND){
-      fetch('/api/precos?termo='+encodeURIComponent(p.n)).then(function(r){return r.json();}).then(function(res){
+    if(precosOn()){
+      fetch(precoURL(p.n)).then(function(r){return r.json();}).then(function(res){
         var box=document.getElementById('precos'); if(!box) return;
         var ls=(res.lojas||[]).filter(function(x){return x.preco;});
         box.innerHTML = ls.length? ls.map(function(x){ var eff=x.promo||x.preco; var ex=x.promo?' <span style="color:var(--amber)">promo</span>':(x.atacado?' <span style="color:var(--faint)">atac '+money(x.atacado)+'</span>':'');
