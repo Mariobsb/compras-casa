@@ -83,6 +83,7 @@
     <input id="q" type="search" placeholder="Buscar por nome ou marca — ex.: café, azeite, detergente…" autocomplete="off" disabled>
     <div class="filtros">
       <button class="chip scan" id="scanbtn" type="button" style="display:none">📷 escanear código</button>
+      <button class="chip" id="lojasbtn" type="button" title="Escolher em quais mercados pesquisar">🏪 mercados <span id="lojascount"></span></button>
       <select id="cat" title="Filtrar por categoria"><option value="">Todas as categorias</option></select>
       <span class="chip" id="cLow" role="button" aria-pressed="false">low-carb</span>
       <span class="chip" id="cHi" role="button" aria-pressed="false">nota alta (≥80)</span>
@@ -251,6 +252,24 @@
   .amzbtn{display:block;text-align:center;margin-top:16px;background:var(--panel);border:1px solid var(--line2);color:var(--muted);border-radius:9px;padding:9px 14px;font-size:13px;font-weight:600;text-decoration:none}
   .amzbtn:hover{color:var(--ink);border-color:var(--accent)}
   .chip.scan{cursor:pointer;color:var(--accent);border-color:var(--accent);background:rgba(86,217,140,.08);font-family:var(--sans);font-size:13px;padding:6px 14px}
+  /* --- painel "quais mercados pesquisar" --- */
+  #lojasbtn{cursor:pointer;font-family:var(--sans);font-size:13px;padding:6px 14px;background:var(--panel);border:1px solid var(--line2);color:var(--muted);border-radius:999px;font-weight:600}
+  #lojasbtn:hover{color:var(--ink);border-color:var(--accent)}
+  #lojascount{font-family:var(--mono);font-size:11.5px;color:var(--faint)}
+  .msum{font-size:12.5px;color:var(--muted);padding-bottom:10px;border-bottom:1px solid var(--line)}
+  .msum b{color:var(--accent);font-family:var(--mono)}
+  .mwarn{margin-top:10px;font-size:12px;color:var(--amber);background:rgba(200,150,60,.10);border:1px solid #6b5323;border-radius:8px;padding:8px 11px;line-height:1.45}
+  .mbtns{display:flex;gap:7px;flex-wrap:wrap;margin:12px 0 10px}
+  .mfiltro{width:100%;box-sizing:border-box;background:var(--panel);border:1px solid var(--line2);color:var(--ink);border-radius:9px;padding:9px 12px;font-size:13.5px;font-family:var(--sans);margin-bottom:6px}
+  .mlista{max-height:46vh;overflow-y:auto;margin:0 -4px;padding:0 4px}
+  .mrede{display:flex;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:0;background:var(--panel2);padding:11px 0 6px;z-index:1}
+  .mrede b{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--faint);font-weight:700}
+  .mall{background:transparent;border:none;color:var(--accent);font-size:11.5px;font-weight:600;cursor:pointer;padding:2px 0}
+  .mrow{display:flex;align-items:center;gap:11px;padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer}
+  .mrow input{accent-color:var(--accent);width:17px;height:17px;flex:0 0 17px;cursor:pointer}
+  .mnome{font-size:13.5px;font-weight:600;color:var(--muted);min-width:0}
+  .mrow.on .mnome{color:var(--ink)}
+  .mnome small{display:block;font-family:var(--mono);font-size:10.5px;color:var(--faint);font-weight:400;margin-top:2px}
   #scanov{position:fixed;inset:0;z-index:200;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden}
   #scanvid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
   .scanbox{position:relative;z-index:1;width:76%;max-width:340px;height:150px;border:2px solid var(--accent);border-radius:14px;box-shadow:0 0 0 3000px rgba(0,0,0,.5)}
@@ -264,7 +283,30 @@
   // Preço ao vivo: backend local (tailnet) quando existir; senão o Worker público (workers.dev).
   var WORKER='https://precos-casa.automercadomario.workers.dev';   // Worker de preços ao vivo (Cloudflare)
   function precosOn(){ return BACKEND || !!WORKER; }
-  function precoURL(termo,ean){ var b=(BACKEND?'/api/precos':WORKER+'/precos'); var qs='?termo='+encodeURIComponent(termo||''); if(ean) qs+='&ean='+encodeURIComponent(ean); return b+qs; }
+  // ===== MERCADOS: quais lojas pesquisar (config da família, em localStorage) =====
+  // Sem escolha salva, o servidor usa as lojas marcadas como padrão no catálogo.
+  // O Worker público consulta no máximo LOJASMAX por vez (limite da Cloudflare);
+  // o backend local, quando disponível, consulta todas.
+  var LKEY='casa_mercados', CATLOJAS=null, LOJASMAX=12;
+  function lojasSel(){ try{ var a=JSON.parse(localStorage.getItem(LKEY)); return (Array.isArray(a)&&a.length)?a:null; }catch(e){ return null; } }
+  function lojasSet(a){ if(a&&a.length) localStorage.setItem(LKEY, JSON.stringify(a)); else localStorage.removeItem(LKEY); pintarChip(); }
+  function baseURL(){ return BACKEND?'/api':WORKER; }
+  function precoURL(termo,ean){
+    var qs='?termo='+encodeURIComponent(termo||''); if(ean) qs+='&ean='+encodeURIComponent(ean);
+    var sel=lojasSel(); if(sel) qs+='&lojas='+encodeURIComponent(sel.join(','));
+    return baseURL()+'/precos'+qs;
+  }
+  function pintarChip(){
+    var el=document.getElementById('lojascount'); if(!el) return;
+    var sel=lojasSel();
+    el.textContent = sel ? '('+sel.length+')' : (CATLOJAS? '('+CATLOJAS.padrao.length+')' : '');
+  }
+  function carregarCatalogo(cb){
+    if(CATLOJAS) return cb(CATLOJAS);
+    fetch(baseURL()+'/lojas').then(function(r){return r.json();}).then(function(j){
+      CATLOJAS=j; LOJASMAX=j.max||LOJASMAX; pintarChip(); cb(j);
+    }).catch(function(){ cb(null); });
+  }
   if(precosOn()) document.body.classList.add('backend');   // cards clicáveis (cursor/hover) quando há preço ao vivo
   var drawer=document.getElementById('drawer'), dbody=document.getElementById('dbody'), dtitle=document.getElementById('dtitle');
   function getL(){ try{ var o=JSON.parse(localStorage.getItem(KEY)); if(o&&typeof o==='object'){ if(!o['Favoritos'])o['Favoritos']=[]; return o; } }catch(e){} return {'Favoritos':[]}; }
@@ -312,6 +354,70 @@
     }
   }
 
+  // ===== Painel "quais mercados pesquisar" =====
+  var _filtroLoja='';
+  window.abrirMercados=function(){
+    dtitle.textContent='Mercados';
+    dbody.innerHTML='<div class="dload">carregando o catálogo…</div>';
+    drawer.classList.add('open');
+    carregarCatalogo(function(cat){
+      if(!cat){ dbody.innerHTML='<div class="dload">não consegui carregar o catálogo de lojas.</div>'; return; }
+      pintarMercados();
+    });
+  };
+  function selAtual(){ var s=lojasSel(); return s? s.slice() : (CATLOJAS?CATLOJAS.padrao.slice():[]); }
+  function pintarMercados(){
+    var cat=CATLOJAS, sel=selAtual(), on={}; sel.forEach(function(i){on[i]=1;});
+    var f=_filtroLoja.toLowerCase();
+    var lojas=cat.lojas.filter(function(l){
+      return !f || (l.nome+' '+(l.bairro||'')+' '+(l.rede||'')+' '+(l.tipo||'')).toLowerCase().indexOf(f)>=0;
+    });
+    var redes={}, ordem=[];
+    lojas.forEach(function(l){ if(!redes[l.rede]){ redes[l.rede]=[]; ordem.push(l.rede);} redes[l.rede].push(l); });
+
+    var alerta='';
+    if(!BACKEND && sel.length>LOJASMAX)
+      alerta='<div class="mwarn">⚠ o site consulta no máximo '+LOJASMAX+' mercados por vez — os '+(sel.length-LOJASMAX)+' últimos ficam de fora. Em casa, com o servidor ligado, vão todos.</div>';
+
+    var corpo=ordem.map(function(rede){
+      var itens=redes[rede], todosOn=itens.every(function(l){return on[l.id];});
+      return '<div class="mrede"><b>'+esc2(rede)+'</b>'
+        + '<button class="mall" data-rede="'+esc2(rede)+'">'+(todosOn?'desmarcar':'marcar todos')+'</button></div>'
+        + itens.map(function(l){
+            return '<label class="mrow'+(on[l.id]?' on':'')+'">'
+              + '<input type="checkbox" data-loja="'+esc2(l.id)+'"'+(on[l.id]?' checked':'')+'>'
+              + '<span class="mnome">'+esc2(l.nome)+'<small>'+esc2(l.bairro||'')
+              + (l.min_entrega?' · mín. R$ '+Number(l.min_entrega).toFixed(0):'')
+              + (l.tipo&&l.tipo!=='mercado'?' · '+esc2(l.tipo):'')+'</small></span></label>';
+          }).join('');
+    }).join('');
+
+    dbody.innerHTML=
+      '<div class="msum"><b>'+sel.length+'</b> de '+cat.total+' mercados · a pesquisa de preço usa esta lista</div>'
+      + alerta
+      + '<div class="mbtns">'
+      +   '<button class="lact" data-preset="padrao">padrão</button>'
+      +   '<button class="lact" data-preset="sudoeste">só perto de casa</button>'
+      +   '<button class="lact" data-preset="mercados">só supermercados</button>'
+      +   '<button class="lact" data-preset="nenhum">limpar</button>'
+      + '</div>'
+      + '<input class="mfiltro" id="mfiltro" type="search" placeholder="filtrar por nome, bairro ou tipo…" value="'+esc2(_filtroLoja)+'">'
+      + '<div class="mlista">'+(corpo||'<div class="dload">nenhum mercado com esse filtro.</div>')+'</div>';
+
+    var inp=document.getElementById('mfiltro');
+    if(inp) inp.oninput=function(){ _filtroLoja=this.value; var p=this.selectionStart; pintarMercados();
+      var n=document.getElementById('mfiltro'); if(n){ n.focus(); try{n.setSelectionRange(p,p);}catch(e){} } };
+  }
+  function aplicarPreset(qual){
+    var cat=CATLOJAS; if(!cat) return;
+    if(qual==='padrao') return lojasSet(null);                       // volta ao padrão do servidor
+    if(qual==='nenhum') return lojasSet(cat.padrao.slice(0,1));      // 1 loja: lista vazia significaria "padrão"
+    if(qual==='sudoeste')
+      return lojasSet(cat.lojas.filter(function(l){ return /sudoeste|sia|noroeste/i.test((l.bairro||'')+' '+l.nome); }).map(function(l){return l.id;}));
+    if(qual==='mercados')
+      return lojasSet(cat.lojas.filter(function(l){ return l.tipo==='mercado'||l.tipo==='atacarejo'; }).map(function(l){return l.id;}));
+  }
+
   function abrirListas(){
     var o=getL(); dtitle.textContent='Minhas listas';
     var rows=Object.keys(o).map(function(nm){ return '<div class="lrow"><b>'+esc2(nm)+'</b><span>'+o[nm].length+' itens</span><button class="lact" data-ver="'+esc2(nm)+'">ver</button></div>'; }).join('');
@@ -329,6 +435,20 @@
 
   dbody.addEventListener('click', function(e){
     var t=e.target, chip=t.closest('.lchip');
+    // --- painel de mercados ---
+    if(t.getAttribute && t.getAttribute('data-preset')){ aplicarPreset(t.getAttribute('data-preset')); pintarMercados(); return; }
+    if(t.getAttribute && t.getAttribute('data-rede')){
+      var rede=t.getAttribute('data-rede'), sel=selAtual(), on={}; sel.forEach(function(i){on[i]=1;});
+      var itens=CATLOJAS.lojas.filter(function(l){return l.rede===rede;});
+      var todosOn=itens.every(function(l){return on[l.id];});
+      itens.forEach(function(l){ if(todosOn) delete on[l.id]; else on[l.id]=1; });
+      lojasSet(Object.keys(on)); pintarMercados(); return;
+    }
+    if(t.getAttribute && t.getAttribute('data-loja')){
+      var id=t.getAttribute('data-loja'), s2=selAtual(), o2={}; s2.forEach(function(i){o2[i]=1;});
+      if(o2[id]) delete o2[id]; else o2[id]=1;
+      lojasSet(Object.keys(o2)); pintarMercados(); return;
+    }
     if(chip && CURP){
       if(chip.getAttribute('data-nova')){ var nm=prompt('Nome da nova lista:'); if(nm&&nm.trim()){ togglear(nm.trim(),CURP); abrirProduto(CURP); window.atualizarFavs(); } }
       else { var nm2=chip.getAttribute('data-lista'); var add=togglear(nm2,CURP); chip.classList.toggle('on',add); window.atualizarFavs(); }
@@ -343,6 +463,8 @@
   });
 
   document.getElementById('listbtn').addEventListener('click', abrirListas);
+  document.getElementById('lojasbtn').addEventListener('click', window.abrirMercados);
+  if(precosOn()) carregarCatalogo(function(){});   // só p/ mostrar a contagem no chip
   window.atualizarFavs();
 </script>
 
