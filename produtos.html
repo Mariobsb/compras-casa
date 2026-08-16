@@ -155,7 +155,8 @@
     }
     var matches = [];
     if(barcode){
-      for(var i=0;i<DADOS.length;i++){ var pe=DADOS[i].e; if(pe && (''+pe)===raw) matches.push(DADOS[i]); }
+      var rawz=raw.replace(/^0+/,'');   // tolera zero à esquerda (UPC-A 12 díg. vs EAN-13)
+      for(var i=0;i<DADOS.length;i++){ var pe=DADOS[i].e; if(pe && (''+pe).replace(/^0+/,'')===rawz) matches.push(DADOS[i]); }
     } else {
       for(var i=0;i<DADOS.length;i++){
         var p = DADOS[i];
@@ -264,6 +265,7 @@
   var WORKER='https://precos-casa.automercadomario.workers.dev';   // Worker de preços ao vivo (Cloudflare)
   function precosOn(){ return BACKEND || !!WORKER; }
   function precoURL(termo,ean){ var b=(BACKEND?'/api/precos':WORKER+'/precos'); var qs='?termo='+encodeURIComponent(termo||''); if(ean) qs+='&ean='+encodeURIComponent(ean); return b+qs; }
+  if(precosOn()) document.body.classList.add('backend');   // cards clicáveis (cursor/hover) quando há preço ao vivo
   var drawer=document.getElementById('drawer'), dbody=document.getElementById('dbody'), dtitle=document.getElementById('dtitle');
   function getL(){ try{ var o=JSON.parse(localStorage.getItem(KEY)); if(o&&typeof o==='object'){ if(!o['Favoritos'])o['Favoritos']=[]; return o; } }catch(e){} return {'Favoritos':[]}; }
   function setL(o){ localStorage.setItem(KEY, JSON.stringify(o)); }
@@ -300,7 +302,7 @@
       + '<a class="amzbtn" href="https://www.amazon.com.br/s?k='+amzQ+'" target="_blank" rel="noopener">🔎 buscar na Amazon</a>';
     drawer.classList.add('open');
     if(precosOn()){
-      fetch(precoURL(p.n,p.e)).then(function(r){return r.json();}).then(function(res){
+      fetch(precoURL(p.termo!=null?p.termo:p.n, p.e)).then(function(r){return r.json();}).then(function(res){
         var box=document.getElementById('precos'); if(!box) return;
         var ls=(res.lojas||[]).filter(function(x){return x.preco;});
         box.innerHTML = ls.length? ls.map(function(x){ var eff=x.promo||x.preco; var ex=x.promo?' <span style="color:var(--amber)">promo</span>':(x.atacado?' <span style="color:var(--faint)">atac '+money(x.atacado)+'</span>':'');
@@ -357,10 +359,11 @@
 
     var detector=null, stream=null, track=null, timer=null, rodando=false, torchOn=false, ov=null;
 
-    function ean13valido(c){                         // dígito verificador mod-10 (evita leitura errada)
-      if(!/^\d{13}$/.test(c)) return false;
-      var s=0; for(var i=0;i<12;i++){ s += (+c[i])*(i%2?3:1); }
-      return ((10-(s%10))%10) === (+c[12]);
+    function eanValido(c){                            // dígito verificador mod-10 — EAN-13 e EAN-8
+      if(!/^\d{13}$/.test(c) && !/^\d{8}$/.test(c)) return false;
+      var d=c.split('').map(Number), dv=d.pop(), s=0;
+      for(var i=d.length-1,k=0;i>=0;i--,k++){ s += d[i]*(k%2===0?3:1); }  // da direita: 3,1,3,1…
+      return ((10-(s%10))%10) === dv;
     }
     function normaliza(c){ c=(c||'').replace(/\D/g,''); if(/^\d{12}$/.test(c)) c='0'+c; return c; } // UPC-A -> EAN-13
 
@@ -380,18 +383,23 @@
     }
 
     function iniciar(){
-      try{ detector=new window.BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e']}); }
+      try{ detector=new window.BarcodeDetector({formats:['ean_13','ean_8','upc_a']}); }
       catch(e){ setMsg('Leitor não suportado neste aparelho.'); return; }
       navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}})
         .then(function(s){
-          stream=s; var v=document.getElementById('scanvid'); v.srcObject=s;
+          // fechou (✕ ou app foi p/ segundo plano) enquanto o Android pedia permissão → não deixa a câmera ligada
+          if(!rodando){ s.getTracks().forEach(function(t){ t.stop(); }); return; }
+          var v=document.getElementById('scanvid');
+          if(!v){ s.getTracks().forEach(function(t){ t.stop(); }); return; }
+          stream=s; v.srcObject=s;
           track=s.getVideoTracks()[0];
           try{ var caps=track.getCapabilities&&track.getCapabilities(); if(caps&&caps.torch){ var tb=document.getElementById('scantorch'); if(tb) tb.style.display=''; } }catch(e){}
           try{ track.applyConstraints({advanced:[{focusMode:'continuous'}]}); }catch(e){}
           return v.play();
         })
-        .then(function(){ ler(); })
+        .then(function(){ if(rodando) ler(); })
         .catch(function(err){
+          if(stream){ stream.getTracks().forEach(function(t){ t.stop(); }); stream=null; track=null; } // não deixa a câmera presa
           var n=err&&err.name;
           setMsg(n==='NotAllowedError'?'Permissão de câmera negada.'
                :n==='NotFoundError'?'Nenhuma câmera encontrada.'
@@ -405,9 +413,10 @@
       var v=document.getElementById('scanvid');
       if(v && v.readyState>=2 && detector){
         detector.detect(v).then(function(codes){
+          if(!rodando) return;                        // fechou enquanto detectava — não abre nada
           for(var i=0;i<codes.length;i++){
             var c=normaliza(codes[i].rawValue);
-            if(ean13valido(c)){ achou(c); return; }
+            if(eanValido(c)){ achou(c); return; }
           }
           if(rodando) timer=setTimeout(ler,120);
         }).catch(function(){ if(rodando) timer=setTimeout(ler,160); });
@@ -422,13 +431,13 @@
       setTimeout(function(){
         var r=window.__RES__;
         if(r && r.length){ abrirProduto(r[0]); }
-        else if(typeof abrirProduto==='function'){ abrirProduto({n:'Código '+ean, m:'', c:'', e:ean, i:null}); }
+        else if(typeof abrirProduto==='function'){ abrirProduto({n:'Código '+ean, termo:'', m:'', c:'', e:ean, i:null}); }
       },220);
     }
 
     function luz(){
-      if(!track) return; torchOn=!torchOn;
-      try{ track.applyConstraints({advanced:[{torch:torchOn}]}); }catch(e){}
+      if(!track) return;
+      try{ track.applyConstraints({advanced:[{torch:!torchOn}]}); torchOn=!torchOn; }catch(e){}
     }
 
     function fechar(){
