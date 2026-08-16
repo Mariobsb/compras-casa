@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Listas da Casa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0F1613; --panel:#17211D; --panel2:#1E2A25; --line:#2C3A33; --line2:#3A4C43;
+    --ink:#EAF1EC; --muted:#94A89D; --faint:#6E8377; --accent:#56D98C; --amber:#E7B24C; --teal:#5CC7C2; --red:#E8896B;
+    --sans:'Manrope',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace; --maxw:1180px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;
+    background-image:radial-gradient(1100px 520px at 82% -8%, rgba(86,217,140,.07), transparent 60%)}
+  a{color:var(--accent);text-decoration:none}
+  .appbar{position:sticky;top:0;z-index:50;background:rgba(15,22,19,.94);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .appbar-in{max-width:var(--maxw);margin:0 auto;display:flex;align-items:center;gap:16px;padding:0 clamp(16px,3vw,28px);height:52px}
+  .appbar .bm{display:flex;align-items:center;gap:9px;font-weight:800;font-size:14px;letter-spacing:-.01em;white-space:nowrap;color:var(--ink)}
+  .appbar .bm .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent)}
+  .tabs{display:flex;gap:4px;margin-left:auto;overflow-x:auto;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{color:var(--muted);font-size:13.5px;font-weight:600;padding:7px 14px;border-radius:9px;white-space:nowrap}
+  .tab:hover{color:var(--ink);background:var(--panel);text-decoration:none}
+  .tab.active{color:var(--accent);background:var(--panel)}
+  @media(max-width:560px){.appbar .bm .txt{display:none}.tab{padding:7px 10px;font-size:12.5px}}
+
+  .wrap{max-width:820px;margin:0 auto;padding:26px clamp(14px,4vw,40px) 120px}
+  .eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:600;margin:0 0 8px}
+  h1{font-weight:800;font-size:clamp(24px,4vw,34px);letter-spacing:-.025em;margin:0 0 6px}
+  .sub{color:var(--muted);font-size:14px;margin:0 0 18px}
+
+  /* ---- segmentos (lista da casa / compras / em falta) ---- */
+  .segs{display:flex;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:5px;margin-bottom:16px;position:sticky;top:52px;z-index:20}
+  .seg{flex:1;text-align:center;padding:10px 6px;border-radius:9px;font-size:13.5px;font-weight:700;color:var(--muted);cursor:pointer;user-select:none;border:none;background:transparent;font-family:var(--sans);line-height:1.25}
+  .seg .sn{display:block;font-family:var(--mono);font-size:10.5px;font-weight:600;color:var(--faint);margin-top:2px}
+  .seg.on{background:var(--panel2);color:var(--accent);box-shadow:0 1px 0 rgba(0,0,0,.25)}
+  .seg.on .sn{color:var(--accent)}
+
+  /* ---- quick add ---- */
+  .qa{display:flex;gap:8px;margin-bottom:6px}
+  .qa input{flex:1;min-width:0;background:var(--panel2);border:1px solid var(--line2);border-radius:12px;color:var(--ink);
+    font-family:var(--sans);font-size:16px;padding:13px 15px;outline:none}
+  .qa input:focus{border-color:var(--accent)}
+  .qa input::placeholder{color:var(--faint)}
+  .qa button{flex:0 0 auto;background:var(--accent);color:#08120c;border:0;border-radius:12px;padding:0 18px;font-size:19px;font-weight:800;cursor:pointer}
+  .qahint{font-family:var(--mono);font-size:11px;color:var(--faint);margin:0 2px 16px}
+
+  /* ---- grupos por categoria ---- */
+  .grupo{margin-bottom:18px}
+  .gh{display:flex;align-items:center;gap:9px;padding:6px 2px 8px;position:sticky;top:112px;background:var(--bg);z-index:10}
+  .gh .gi{font-size:16px}
+  .gh b{font-size:11.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--faint);font-weight:700}
+  .gh .gc{font-family:var(--mono);font-size:11px;color:var(--faint);margin-left:auto}
+  .cards{display:flex;flex-direction:column;gap:7px}
+
+  .it{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 13px;display:flex;align-items:center;gap:12px;cursor:pointer}
+  .it:hover{border-color:var(--line2)}
+  .it.falta{border-color:#6b5323;background:rgba(231,178,76,.07)}
+  .it.ok{opacity:.5}
+  .it.ok .inome{text-decoration:line-through}
+  .ibody{flex:1;min-width:0}
+  .inome{font-weight:600;font-size:15px;line-height:1.3}
+  .imeta{font-size:12.5px;color:var(--muted);margin-top:2px;display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+  .imarca{color:var(--teal)}
+  .iqtd{font-family:var(--mono);font-size:12px;color:var(--faint);background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:2px 8px;white-space:nowrap}
+  .iobs{color:var(--faint);font-size:12px}
+  .star{background:none;border:none;color:var(--line2);font-size:16px;cursor:pointer;padding:2px 4px;flex:0 0 auto}
+  .star.on{color:var(--amber)}
+  .chk{width:22px;height:22px;flex:0 0 22px;border:2px solid var(--line2);border-radius:7px;display:flex;align-items:center;justify-content:center;color:transparent;font-size:13px;font-weight:800}
+  .chk.on{background:var(--accent);border-color:var(--accent);color:#08120c}
+
+  /* ---- edição inline ---- */
+  .edit{background:var(--panel2);border:1px solid var(--line2);border-radius:12px;padding:13px;display:flex;flex-direction:column;gap:9px}
+  .erow{display:flex;gap:8px;flex-wrap:wrap}
+  .edit input,.edit select{background:var(--panel);border:1px solid var(--line2);border-radius:9px;color:var(--ink);font-family:var(--sans);font-size:14.5px;padding:9px 11px;outline:none;min-width:0}
+  .edit input:focus,.edit select:focus{border-color:var(--accent)}
+  .edit .f1{flex:1 1 100%} .edit .f2{flex:1 1 46%} .edit .f3{flex:1 1 28%}
+  .eacts{display:flex;gap:8px;justify-content:flex-end;margin-top:2px}
+  .bt{background:var(--panel);border:1px solid var(--line2);color:var(--muted);border-radius:9px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans)}
+  .bt:hover{color:var(--ink);border-color:var(--accent)}
+  .bt.pri{background:var(--accent);border-color:var(--accent);color:#08120c}
+  .bt.del{color:var(--red);border-color:#6b3b2c}
+
+  /* ---- barra de ação fixa ---- */
+  .fab{position:fixed;left:0;right:0;bottom:0;z-index:40;background:linear-gradient(to top,var(--bg) 62%,transparent);
+    padding:14px clamp(14px,4vw,40px) 18px;display:flex;gap:9px;justify-content:center}
+  .fab .bt{padding:13px 20px;font-size:14.5px}
+  .fab .bt.pri{box-shadow:0 6px 22px rgba(86,217,140,.22)}
+
+  /* ---- listas de compras ---- */
+  .lcard{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:14px 15px;display:flex;align-items:center;gap:12px;cursor:pointer;margin-bottom:8px}
+  .lcard:hover{border-color:var(--accent)}
+  .lcard b{font-size:15.5px}
+  .lcard .lm{font-family:var(--mono);font-size:11.5px;color:var(--faint);margin-top:2px}
+  .lcard .seta{color:var(--faint);font-size:18px}
+  .prog{height:4px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:8px}
+  .prog i{display:block;height:100%;background:var(--accent);border-radius:3px}
+
+  /* ---- orçamento ---- */
+  .orc{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:15px;margin-bottom:12px}
+  .orc h3{margin:0 0 4px;font-size:15px}
+  .orctop{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+  .big{font-family:var(--mono);font-size:23px;font-weight:600;color:var(--accent)}
+  .orcsub{font-size:13px;color:var(--muted);margin:2px 0 0}
+  .eco{color:var(--amber);font-family:var(--mono);font-size:13px;font-weight:600}
+  .lojarow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .lojarow:last-child{border-bottom:none}
+  .lojarow .ln{flex:1;min-width:0}
+  .lojarow .ln small{display:block;font-family:var(--mono);font-size:11px;color:var(--faint)}
+  .lojarow .lv{font-family:var(--mono);font-weight:600}
+  .tag{font-family:var(--mono);font-size:10px;font-weight:600;padding:2px 7px;border-radius:6px;border:1px solid var(--line2);color:var(--faint)}
+  .tag.ok{color:var(--accent);border-color:var(--accent)}
+  .tag.warn{color:var(--amber);border-color:#6b5323}
+
+  .vazio{color:var(--faint);font-size:14px;text-align:center;padding:40px 10px;line-height:1.6}
+  .carregando{color:var(--faint);font-family:var(--mono);font-size:12.5px;padding:18px 2px}
+  .erro{color:var(--amber);font-family:var(--mono);font-size:12.5px;padding:12px;border:1px solid #6b5323;border-radius:10px;background:rgba(231,178,76,.08);margin-bottom:12px}
+
+  /* ---- porta de entrada (token) ---- */
+  .porta{max-width:420px;margin:60px auto;text-align:center;padding:0 20px}
+  .porta input{width:100%;background:var(--panel2);border:1px solid var(--line2);border-radius:12px;color:var(--ink);
+    font-family:var(--mono);font-size:15px;padding:13px 15px;text-align:center;outline:none;margin:14px 0}
+  .porta input:focus{border-color:var(--accent)}
+</style>
+</head>
+<body>
+<script src="gate.js"></script>
+
+<header class="appbar"><div class="appbar-in">
+  <span class="bm"><span class="dot"></span><span class="txt">Automação da Casa</span></span>
+  <nav class="tabs">
+    <a href="cardapio.html" class="tab">Cardápio</a>
+    <a href="anamnese.html" class="tab">Consulta</a>
+    <a href="listas.html" class="tab active">Listas</a>
+    <a href="produtos.html" class="tab">Produtos</a>
+    <a href="compras.html" class="tab">Compras</a>
+  </nav>
+</div></header>
+
+<div class="wrap" id="wrap">
+  <p class="eyebrow">Módulo 1 · compras</p>
+  <h1>Listas da casa</h1>
+  <p class="sub" id="sub">Carregando…</p>
+  <div id="conteudo"></div>
+</div>
+
+<script src="data/categorias.js"></script>
+<script>
+/* ===========================================================================
+   LISTAS DA CASA
+   ---------------------------------------------------------------------------
+   Três coisas, uma fonte de dados só (Worker + KV, ver worker/listas.js):
+
+   1. LISTA DA CASA  — tudo que a casa consome, dividido por categoria sozinho.
+   2. COMPRAS        — listas geradas a partir dela; dá para orçar nos mercados.
+   3. EM FALTA       — o que acabou. Tela de um toque, pensada para a Nílvia
+                       marcar no celular enquanto cozinha.
+
+   Toda alteração vira uma OPERAÇÃO enviada ao Worker (não "salva o documento
+   inteiro"), então duas pessoas editando ao mesmo tempo não se atropelam.
+   A tela aplica a mudança na hora (otimista) e reconcilia com a resposta.
+   =========================================================================== */
+(function(){
+'use strict';
+
+var WORKER='https://precos-casa.automercadomario.workers.dev';
+var TKEY='casa_token', SKEY='casa_seg';
+var doc=null, seg='casa', abertos={}, listaAberta=null, orcamento=null, ocupado=false;
+var CATS=(window.__CATEGORIAS__||{categorias:[],chaves:[]});
+var CATPOR={}; CATS.categorias.forEach(function(c){CATPOR[c.id]=c;});
+
+var el=function(id){return document.getElementById(id);};
+var esc=function(s){return (s==null?'':String(s)).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
+var money=function(v){return v==null?'—':('R$ '+Number(v).toFixed(2).replace('.',','));};
+
+/* ---- token: entra por link (listas.html?t=…) e fica no aparelho ------------
+   Não fica no código do site: o repositório é público, e chave de escrita em
+   repositório público é chave vazada. */
+function token(){ return localStorage.getItem(TKEY)||''; }
+(function pegarTokenDaURL(){
+  var m=location.search.match(/[?&]t=([^&]+)/);
+  if(m){ localStorage.setItem(TKEY, decodeURIComponent(m[1]));
+         history.replaceState(null,'',location.pathname); }
+})();
+
+/* ---- API ---------------------------------------------------------------- */
+function api(metodo, caminho, corpo){
+  return fetch(WORKER+caminho+(caminho.indexOf('?')<0?'?':'&')+'t='+encodeURIComponent(token()),
+    {method:metodo, headers:corpo?{'Content-Type':'application/json'}:undefined,
+     body:corpo?JSON.stringify(corpo):undefined})
+    .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.erro||('HTTP '+r.status)); return j; }); });
+}
+/** Envia operações e re-renderiza com o documento que voltou do servidor. */
+function ops(lista, quem){
+  ocupado=true; pintar();
+  return api('PATCH','/listas',{ops:lista, por:quem||null})
+    .then(function(j){ doc=j; ocupado=false; pintar(); return j; })
+    .catch(function(e){ ocupado=false; alert('Não consegui salvar: '+e.message); return carregar(); });
+}
+
+/* ---- classificação automática (mesma tabela do dados/categorias.py) ------- */
+function normal(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim(); }
+function classificar(nome){
+  var alvo=' '+normal(nome)+' ';
+  for(var i=0;i<CATS.chaves.length;i++){
+    var k=CATS.chaves[i][0]; if(!k) continue;
+    if(new RegExp('(?:^| )'+k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?: |$)').test(alvo)) return CATS.chaves[i][1];
+  }
+  return 'outros';
+}
+/** "2 leite itambé", "leite itambé x2", "arroz 5kg" -> {nome, qtd, un} */
+function parseQuickAdd(txt){
+  var s=(txt||'').trim(), qtd=null, un=null;
+  var m=s.match(/^(\d+(?:[.,]\d+)?)\s*(kg|g|l|ml|un|pct|cx|dz|gf|fr)?\s+(.+)$/i);   // "2 leite" / "3kg carne"
+  if(m){ qtd=parseFloat(m[1].replace(',','.')); un=m[2]||null; s=m[3]; }
+  else {
+    m=s.match(/^(.+?)\s*[x×]\s*(\d+(?:[.,]\d+)?)$/i);                                // "leite x2"
+    if(m){ s=m[1]; qtd=parseFloat(m[2].replace(',','.')); }
+  }
+  return {nome:s.trim(), qtd:qtd||1, un:un||'un'};
+}
+
+/* ---- render ------------------------------------------------------------- */
+function porCategoria(itens){
+  var g={}; itens.forEach(function(i){ (g[i.cat]=g[i.cat]||[]).push(i); });
+  return CATS.categorias.filter(function(c){return g[c.id];}).map(function(c){ return {cat:c, itens:g[c.id]}; });
+}
+function cabecalho(c,n){
+  return '<div class="gh"><span class="gi">'+c.icone+'</span><b>'+esc(c.nome)+'</b><span class="gc">'+n+'</span></div>';
+}
+function selectCat(valor){
+  return '<select class="f3" data-campo="cat">'+CATS.categorias.map(function(c){
+    return '<option value="'+c.id+'"'+(c.id===valor?' selected':'')+'>'+c.icone+' '+esc(c.nome)+'</option>';}).join('')+'</select>';
+}
+
+function pintar(){
+  if(!doc){ return; }
+  var falta=doc.global.filter(function(i){return i.falta;}).length;
+  el('sub').innerHTML='O que a casa usa, dividido por categoria — e as listas de compras que saem dela.'
+    + (ocupado?' <span class="carregando">salvando…</span>':'');
+  var c=el('conteudo');
+  c.innerHTML=
+    '<div class="segs">'
+    + seg2('casa','🏠 Lista da casa', doc.global.length+' itens')
+    + seg2('compras','🛒 Compras', doc.listas.length+(doc.listas.length===1?' lista':' listas'))
+    + seg2('falta','⚠️ Em falta', falta?(falta>1?falta+' itens':'1 item'):'nada')
+    + '</div><div id="corpo"></div>';
+  [].forEach.call(c.querySelectorAll('.seg'),function(b){
+    b.onclick=function(){ seg=b.getAttribute('data-seg'); listaAberta=null; orcamento=null;
+      localStorage.setItem(SKEY,seg); pintar(); };
+  });
+  ({casa:pintarCasa, compras:pintarCompras, falta:pintarFalta}[seg])();
+}
+function seg2(id,titulo,sub){
+  return '<button class="seg'+(seg===id?' on':'')+'" data-seg="'+id+'">'+titulo+'<span class="sn">'+esc(sub)+'</span></button>';
+}
+
+/* ---- 1. LISTA DA CASA ---------------------------------------------------- */
+function pintarCasa(){
+  var corpo=el('corpo');
+  var grupos=porCategoria(doc.global);
+  corpo.innerHTML=
+    '<div class="qa"><input id="qa" placeholder="Adicionar item — ex.: 2 leite itambé"><button id="qab" title="adicionar">＋</button></div>'
+    + '<p class="qahint">a categoria é escolhida sozinha · toque no item para editar marca, quantidade e observação</p>'
+    + (doc.global.length? grupos.map(function(g){
+        return '<div class="grupo">'+cabecalho(g.cat,g.itens.length)
+          + '<div class="cards">'+g.itens.map(itemCasa).join('')+'</div></div>';
+      }).join('')
+      : '<div class="vazio">A lista da casa está vazia.<br>Adicione o primeiro item aí em cima.</div>')
+    + '<div class="fab">'
+    +   '<button class="bt pri" id="gerar">🛒 gerar lista de compras</button>'
+    + '</div>';
+
+  el('qa').addEventListener('keydown',function(e){ if(e.key==='Enter') adicionar(); });
+  el('qab').onclick=adicionar;
+  el('gerar').onclick=gerarLista;
+  ligarItens(corpo);
+}
+function itemCasa(i){
+  if(abertos[i.id]) return editor(i);
+  return '<div class="it'+(i.falta?' falta':'')+'" data-id="'+i.id+'">'
+    + '<button class="star'+(i.essencial?' on':'')+'" data-star="'+i.id+'" title="essencial">★</button>'
+    + '<div class="ibody"><div class="inome">'+esc(i.nome)+'</div>'
+    +   '<div class="imeta">'
+    +     (i.marca?'<span class="imarca">'+esc(i.marca)+'</span>':'')
+    +     (i.obs?'<span class="iobs">'+esc(i.obs)+'</span>':'')
+    +     (i.falta?'<span class="tag warn">acabou</span>':'')
+    +   '</div></div>'
+    + '<span class="iqtd">'+esc(i.qtd)+' '+esc(i.un)+'</span></div>';
+}
+function editor(i){
+  return '<div class="edit" data-edit="'+i.id+'">'
+    + '<div class="erow"><input class="f1" data-campo="nome" value="'+esc(i.nome)+'" placeholder="nome"></div>'
+    + '<div class="erow"><input class="f2" data-campo="marca" value="'+esc(i.marca||'')+'" placeholder="marca preferida">'
+    +   '<input class="f3" data-campo="qtd" type="number" step="0.5" min="0" value="'+esc(i.qtd)+'" placeholder="qtd">'
+    +   '<input class="f3" data-campo="un" value="'+esc(i.un||'un')+'" placeholder="un"></div>'
+    + '<div class="erow">'+selectCat(i.cat)+'<input class="f2" data-campo="obs" value="'+esc(i.obs||'')+'" placeholder="observação"></div>'
+    + '<div class="eacts"><button class="bt del" data-apagar="'+i.id+'">apagar</button>'
+    +   '<button class="bt" data-cancelar="'+i.id+'">fechar</button>'
+    +   '<button class="bt pri" data-salvar="'+i.id+'">salvar</button></div></div>';
+}
+function ligarItens(raiz){
+  [].forEach.call(raiz.querySelectorAll('.it[data-id]'),function(d){
+    d.onclick=function(e){
+      if(e.target.closest('[data-star]')) return;
+      abertos[d.getAttribute('data-id')]=1; pintar();
+    };
+  });
+  [].forEach.call(raiz.querySelectorAll('[data-star]'),function(b){
+    b.onclick=function(e){ e.stopPropagation();
+      var id=b.getAttribute('data-star'), it=achar(id);
+      ops([{op:'upsert_item',item:{id:id,essencial:!it.essencial}}]);
+    };
+  });
+  [].forEach.call(raiz.querySelectorAll('[data-salvar]'),function(b){
+    b.onclick=function(){
+      var id=b.getAttribute('data-salvar'), cx=raiz.querySelector('[data-edit="'+id+'"]'), item={id:id};
+      [].forEach.call(cx.querySelectorAll('[data-campo]'),function(f){
+        var v=f.value; if(f.getAttribute('data-campo')==='qtd') v=parseFloat(v)||1;
+        item[f.getAttribute('data-campo')]=v;
+      });
+      delete abertos[id]; ops([{op:'upsert_item',item:item}]);
+    };
+  });
+  [].forEach.call(raiz.querySelectorAll('[data-cancelar]'),function(b){
+    b.onclick=function(){ delete abertos[b.getAttribute('data-cancelar')]; pintar(); };
+  });
+  [].forEach.call(raiz.querySelectorAll('[data-apagar]'),function(b){
+    b.onclick=function(){
+      var id=b.getAttribute('data-apagar'), it=achar(id);
+      if(!confirm('Tirar "'+(it?it.nome:id)+'" da lista da casa?')) return;
+      delete abertos[id]; ops([{op:'del_item',id:id}]);
+    };
+  });
+}
+function achar(id){ return doc.global.filter(function(i){return i.id===id;})[0]; }
+
+function adicionar(){
+  var campo=el('qa'), txt=campo.value.trim(); if(!txt) return;
+  var p=parseQuickAdd(txt);
+  campo.value=''; campo.focus();
+  ops([{op:'upsert_item',item:{nome:p.nome, qtd:p.qtd, un:p.un, cat:classificar(p.nome)}}]);
+}
+
+/* ---- 2. COMPRAS ---------------------------------------------------------- */
+function pintarCompras(){
+  var corpo=el('corpo');
+  if(listaAberta) return pintarLista(listaAberta);
+  corpo.innerHTML=
+    (doc.listas.length? doc.listas.slice().reverse().map(function(l){
+      var n=l.itens.length, ok=l.itens.filter(function(i){return i.ok;}).length;
+      return '<div class="lcard" data-lista="'+l.id+'"><div style="flex:1;min-width:0"><b>'+esc(l.nome)+'</b>'
+        + '<div class="lm">'+n+' itens'+(ok?' · '+ok+' no carrinho':'')+' · '+(l.criada_em||'').slice(0,10)+'</div>'
+        + (ok?'<div class="prog"><i style="width:'+Math.round(ok/n*100)+'%"></i></div>':'')
+        + '</div><span class="seta">›</span></div>';
+    }).join('')
+    : '<div class="vazio">Nenhuma lista de compras ainda.<br>Gere uma a partir da lista da casa ou do que está em falta.</div>')
+    + '<div class="fab"><button class="bt pri" id="nova">＋ nova lista</button></div>';
+  [].forEach.call(corpo.querySelectorAll('[data-lista]'),function(d){
+    d.onclick=function(){ listaAberta=d.getAttribute('data-lista'); orcamento=null; pintar(); };
+  });
+  el('nova').onclick=function(){
+    var nome=prompt('Nome da lista:','Compras '+new Date().toLocaleDateString('pt-BR').slice(0,5));
+    if(nome) ops([{op:'nova_lista',nome:nome}]).then(function(j){ listaAberta=j.ids[0]; pintar(); });
+  };
+}
+function pintarLista(id){
+  var l=doc.listas.filter(function(x){return x.id===id;})[0];
+  if(!l){ listaAberta=null; return pintarCompras(); }
+  var corpo=el('corpo'), grupos=porCategoria(l.itens);
+  corpo.innerHTML=
+    '<button class="bt" id="voltar">‹ listas</button>'
+    + '<h2 style="margin:14px 0 4px;font-size:20px">'+esc(l.nome)+'</h2>'
+    + '<p class="qahint">'+l.itens.length+' itens · toque para marcar no carrinho</p>'
+    + (orcamento? pintarOrcamento(orcamento) : '')
+    + (l.itens.length? grupos.map(function(g){
+        return '<div class="grupo">'+cabecalho(g.cat,g.itens.length)
+          +'<div class="cards">'+g.itens.map(function(i){
+            return '<div class="it'+(i.ok?' ok':'')+'" data-litem="'+(i.ref||i.id)+'">'
+              + '<span class="chk'+(i.ok?' on':'')+'">✓</span>'
+              + '<div class="ibody"><div class="inome">'+esc(i.nome)+'</div>'
+              +   '<div class="imeta">'+(i.marca?'<span class="imarca">'+esc(i.marca)+'</span>':'')
+              +   (i.preco!=null?'<span class="iobs">'+money(i.preco)+' · '+esc(i.loja||'')+'</span>':'')+'</div></div>'
+              + '<span class="iqtd">'+esc(i.qtd)+' '+esc(i.un)+'</span></div>';
+          }).join('')+'</div></div>';
+      }).join('')
+      : '<div class="vazio">Lista vazia.<br>Adicione itens pela lista da casa.</div>')
+    + '<div class="fab">'
+    +   '<button class="bt del" id="apagarl">apagar</button>'
+    +   '<button class="bt pri" id="orcar">💰 orçar nos mercados</button>'
+    + '</div>';
+  el('voltar').onclick=function(){ listaAberta=null; orcamento=null; pintar(); };
+  el('orcar').onclick=function(){ orcar(l); };
+  el('apagarl').onclick=function(){
+    if(confirm('Apagar a lista "'+l.nome+'"?')){ listaAberta=null; ops([{op:'del_lista',id:l.id}]); }
+  };
+  [].forEach.call(corpo.querySelectorAll('[data-litem]'),function(d){
+    d.onclick=function(){
+      var ref=d.getAttribute('data-litem');
+      var it=l.itens.filter(function(x){return (x.ref||x.id)===ref;})[0];
+      ops([{op:'item_lista',lista:l.id,ref:it.ref,id:it.id,ok:!it.ok}]);
+    };
+  });
+}
+
+/* ---- 3. EM FALTA (modo Nílvia) ------------------------------------------- */
+function pintarFalta(){
+  var corpo=el('corpo');
+  var faltando=doc.global.filter(function(i){return i.falta;});
+  corpo.innerHTML=
+    '<p class="qahint" style="font-size:13px;color:var(--muted);margin-bottom:14px">'
+    +  'Toque no que <b>acabou</b> ou está no fim. Quem faz as compras vê na hora.</p>'
+    + (faltando.length? '<div class="grupo"><div class="gh"><span class="gi">⚠️</span><b>Está faltando</b>'
+        + '<span class="gc">'+faltando.length+'</span></div><div class="cards">'
+        + faltando.map(cardFalta).join('')+'</div></div>' : '')
+    + porCategoria(doc.global.filter(function(i){return !i.falta;})).map(function(g){
+        return '<div class="grupo">'+cabecalho(g.cat,g.itens.length)
+          + '<div class="cards">'+g.itens.map(cardFalta).join('')+'</div></div>';
+      }).join('')
+    + (faltando.length? '<div class="fab"><button class="bt pri" id="gerarfalta">🛒 gerar lista com '
+        + faltando.length+' iten'+(faltando.length>1?'s':'')+'</button></div>' : '');
+  [].forEach.call(corpo.querySelectorAll('[data-falta]'),function(d){
+    d.onclick=function(){
+      var id=d.getAttribute('data-falta'), it=achar(id);
+      ops([{op:'falta',id:id,valor:!it.falta}]);
+    };
+  });
+  if(el('gerarfalta')) el('gerarfalta').onclick=function(){
+    var nome=prompt('Nome da lista:','Compras '+new Date().toLocaleDateString('pt-BR').slice(0,5));
+    if(!nome) return;
+    ops([{op:'lista_da_falta',nome:nome,limpar_falta:false}]).then(function(j){
+      seg='compras'; listaAberta=j.ids[0]; pintar();
+    });
+  };
+}
+function cardFalta(i){
+  return '<div class="it'+(i.falta?' falta':'')+'" data-falta="'+i.id+'">'
+    + '<span class="chk'+(i.falta?' on':'')+'">✓</span>'
+    + '<div class="ibody"><div class="inome">'+esc(i.nome)+'</div>'
+    + (i.marca||i.obs?'<div class="imeta">'+(i.marca?'<span class="imarca">'+esc(i.marca)+'</span>':'')
+        +(i.obs?'<span class="iobs">'+esc(i.obs)+'</span>':'')+'</div>':'')
+    + '</div><span class="iqtd">'+esc(i.qtd)+' '+esc(i.un)+'</span></div>';
+}
+
+/* ---- gerar lista a partir da lista da casa ------------------------------- */
+function gerarLista(){
+  var essenciais=doc.global.filter(function(i){return i.essencial;});
+  var faltando=doc.global.filter(function(i){return i.falta;});
+  var opcoes=[];
+  if(faltando.length) opcoes.push(['falta','o que está em falta ('+faltando.length+')']);
+  if(essenciais.length) opcoes.push(['essenciais','os essenciais ★ ('+essenciais.length+')']);
+  opcoes.push(['tudo','a lista da casa inteira ('+doc.global.length+')']);
+  var escolha=prompt('Gerar lista com:\n'+opcoes.map(function(o,k){return (k+1)+') '+o[1];}).join('\n')+'\n\nDigite o número:','1');
+  if(!escolha) return;
+  var qual=(opcoes[parseInt(escolha,10)-1]||opcoes[0])[0];
+  var nome=prompt('Nome da lista:','Compras '+new Date().toLocaleDateString('pt-BR').slice(0,5));
+  if(!nome) return;
+  if(qual==='falta') return ops([{op:'lista_da_falta',nome:nome}]).then(function(j){ seg='compras'; listaAberta=j.ids[0]; pintar(); });
+  var fonte=(qual==='essenciais')?essenciais:doc.global;
+  ops([{op:'nova_lista',nome:nome,itens:fonte.map(function(i){
+      return {id:i.id,ref:i.id,nome:i.nome,marca:i.marca,qtd:i.qtd,un:i.un,cat:i.cat,ean:i.ean,ok:false};
+  })}]).then(function(j){ seg='compras'; listaAberta=j.ids[0]; pintar(); });
+}
+
+/* ---- carga -------------------------------------------------------------- */
+function carregar(){
+  return api('GET','/listas').then(function(j){
+    doc=j; seg=localStorage.getItem(SKEY)||'casa'; pintar();
+  }).catch(function(e){
+    if(String(e.message).indexOf('autoriz')>=0) return porta();
+    el('conteudo').innerHTML='<div class="erro">não consegui carregar as listas: '+esc(e.message)+'</div>';
+  });
+}
+function porta(){
+  el('sub').textContent='Esta área é da família.';
+  el('conteudo').innerHTML='<div class="porta"><div style="font-size:34px">🔑</div>'
+    + '<p style="color:var(--muted);font-size:14px">Cole aqui o código da casa (o Mario manda o link por WhatsApp — abrindo por ele, já entra direto).</p>'
+    + '<input id="tk" placeholder="código da casa" autocomplete="off">'
+    + '<button class="bt pri" id="entrar" style="width:100%;padding:13px">entrar</button></div>';
+  el('entrar').onclick=function(){
+    var v=el('tk').value.trim(); if(!v) return;
+    localStorage.setItem(TKEY,v); carregar();
+  };
+  el('tk').addEventListener('keydown',function(e){ if(e.key==='Enter') el('entrar').click(); });
+}
+
+/* Ponte para o orcamento.js (arquivo separado por tamanho, não por acoplamento):
+   ele recebe tudo que precisa aqui e devolve o resultado por setOrcamento(). */
+window.CASA={
+  WORKER:WORKER, esc:esc, money:money,
+  setOrcamento:function(o){ orcamento=o; pintar(); },
+  repintar:pintar
+};
+window.CASA_OPS=ops;   // o orçamento grava o melhor preço de cada item pela mesma via
+function orcar(l){
+  if(!window.orcarLista) return alert('módulo de orçamento não carregou.');
+  window.orcarLista(l, window.CASA);
+}
+function pintarOrcamento(o){
+  return window.orcamentoHTML? window.orcamentoHTML(o, window.CASA) : '';
+}
+carregar();
+})();
+</script>
+<script src="orcamento.js"></script>
+</body>
+</html>
