@@ -246,7 +246,7 @@
   // Preço ao vivo: backend local (tailnet) quando existir; senão o Worker público (workers.dev).
   var WORKER='https://precos-casa.automercadomario.workers.dev';   // Worker de preços ao vivo (Cloudflare)
   function precosOn(){ return BACKEND || !!WORKER; }
-  function precoURL(t){ return (BACKEND?'/api/precos?termo=':WORKER+'/precos?termo=')+encodeURIComponent(t); }
+  function precoURL(termo,ean){ var b=(BACKEND?'/api/precos':WORKER+'/precos'); var qs='?termo='+encodeURIComponent(termo||''); if(ean) qs+='&ean='+encodeURIComponent(ean); return b+qs; }
   var drawer=document.getElementById('drawer'), dbody=document.getElementById('dbody'), dtitle=document.getElementById('dtitle');
   function getL(){ try{ var o=JSON.parse(localStorage.getItem(KEY)); if(o&&typeof o==='object'){ if(!o['Favoritos'])o['Favoritos']=[]; return o; } }catch(e){} return {'Favoritos':[]}; }
   function setL(o){ localStorage.setItem(KEY, JSON.stringify(o)); }
@@ -281,7 +281,7 @@
       + (precosOn()?'<div class="dsec" style="margin-top:18px">Preço nas lojas</div><div id="precos"><div class="dload">buscando…</div></div>':'');
     drawer.classList.add('open');
     if(precosOn()){
-      fetch(precoURL(p.n)).then(function(r){return r.json();}).then(function(res){
+      fetch(precoURL(p.n,p.e)).then(function(r){return r.json();}).then(function(res){
         var box=document.getElementById('precos'); if(!box) return;
         var ls=(res.lojas||[]).filter(function(x){return x.preco;});
         box.innerHTML = ls.length? ls.map(function(x){ var eff=x.promo||x.preco; var ex=x.promo?' <span style="color:var(--amber)">promo</span>':(x.atacado?' <span style="color:var(--faint)">atac '+money(x.atacado)+'</span>':'');
