@@ -172,20 +172,24 @@
     msg.style.display = achou? 'none':'block';
     if(!achou){ list.innerHTML=''; count.textContent=''; msg.textContent='Nada encontrado.'; return; }
     var res = matches.slice(0, 60);
+    window.__RES__ = res;
     count.textContent = 'mostrando '+res.length+' de '+achou.toLocaleString('pt-BR');
     var html='';
     for(var k=0;k<res.length;k++){
       var p=res[k];
-      html += '<div class="prod" data-nome="'+esc(p.n)+'">'
+      html += '<div class="prod" data-i="'+k+'" data-nome="'+esc(p.n)+'">'
             + (p.i?'<img class="thumb" loading="lazy" src="https://atacadaobr.vtexassets.com/arquivos/ids/'+p.i+'-96-96/p.jpg" alt="" onerror="this.style.visibility=\'hidden\'">':'<div class="thumb noimg">sem foto</div>')
             + '<div class="pbody"><div class="pn">'+esc(p.n)+'</div>'
             + '<div class="pm">'+esc(p.m||'—')+' · '+esc(p.c||'')+'</div>'
             + '<div class="meta">'+badge(p.q)
             + (p.l===1?'<span class="lc">low-carb</span>':'')
             + (p.e?'<span class="ean">'+esc(p.e)+'</span>':'')
-            + '</div></div></div>';
+            + '</div></div>'
+            + '<button class="fav" data-i="'+k+'" title="favoritar">★</button>'
+            + '</div>';
     }
     list.innerHTML = html;
+    if(window.atualizarFavs) window.atualizarFavs();
   }
 
   var t;
@@ -200,7 +204,7 @@
   <div class="dh"><b id="dtitle">Preços</b><span class="dx" onclick="fecharDrawer()">✕</span></div>
   <div id="dbody"></div>
 </div>
-<button class="cartbtn" id="cartbtn" onclick="verCarrinho()" style="display:none">🛒 <span id="cartn">0</span></button>
+<button class="listbtn" id="listbtn" title="Minhas listas">📋 listas <span id="listcount"></span></button>
 <style>
   body.backend .prod{cursor:pointer}
   body.backend .prod:hover{border-color:var(--line2);background:var(--panel2)}
@@ -217,59 +221,103 @@
   .prow.barato .pp{color:var(--accent);font-weight:700}
   .padd{background:var(--accent);color:#08120c;border:none;border-radius:8px;font-weight:800;font-size:14px;padding:5px 12px;cursor:pointer;flex:0 0 auto}
   .padd:active{transform:scale(.94)}
-  .cartbtn{position:fixed;right:18px;bottom:18px;z-index:55;background:var(--accent);color:#08120c;border:none;border-radius:999px;font-weight:800;font-size:15px;padding:11px 18px;cursor:pointer;box-shadow:0 6px 22px rgba(86,217,140,.4)}
+  .listbtn{position:fixed;right:18px;bottom:18px;z-index:55;background:var(--accent);color:#08120c;border:none;border-radius:999px;font-weight:800;font-size:14px;padding:11px 17px;cursor:pointer;box-shadow:0 6px 22px rgba(86,217,140,.4)}
   .dload{color:var(--muted);font-size:13px;padding:16px 2px;font-family:var(--mono)}
+  .prod{position:relative}
+  .fav{position:absolute;top:8px;right:9px;background:transparent;border:none;color:var(--line2);font-size:19px;line-height:1;cursor:pointer;padding:3px}
+  .fav.on{color:var(--amber)}
+  .dsec{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);font-weight:700;margin-bottom:9px}
+  .lchips{display:flex;gap:7px;flex-wrap:wrap}
+  .lchip{background:var(--panel);border:1px solid var(--line2);color:var(--muted);border-radius:999px;padding:6px 13px;font-size:13px;font-weight:600;cursor:pointer}
+  .lchip.on{background:rgba(86,217,140,.14);border-color:var(--accent);color:var(--accent)}
+  .lchip.nova{border-style:dashed;color:var(--faint)}
+  .lrow{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)}
+  .lrow b{flex:1}.lrow span{font-family:var(--mono);font-size:12px;color:var(--faint)}
+  .lact{background:var(--panel);border:1px solid var(--line2);color:var(--muted);border-radius:8px;padding:6px 13px;font-size:12.5px;font-weight:600;cursor:pointer}
+  .lact.del{color:var(--red);border-color:#6b3b2c}
+  .lx{background:transparent;border:none;color:var(--faint);font-size:15px;cursor:pointer;padding:4px 6px}
+  .lthumb{width:38px;height:38px;flex:0 0 38px;border-radius:7px;object-fit:contain;background:#fff}
+  .lback{background:transparent;border:none;color:var(--accent);font-size:13px;font-weight:600;cursor:pointer;padding:0 0 10px}
+  .lmanage{display:flex;gap:8px;margin-top:16px;justify-content:flex-end}
 </style>
 <script>
-  var BACKEND=false, CUR={nome:'',lojas:[]};
+  // ===== LISTAS (client-side, localStorage — funciona no site público) =====
+  var KEY='casa_listas', BACKEND=false, CURP=null;
+  var drawer=document.getElementById('drawer'), dbody=document.getElementById('dbody'), dtitle=document.getElementById('dtitle');
+  function getL(){ try{ var o=JSON.parse(localStorage.getItem(KEY)); if(o&&typeof o==='object'){ if(!o['Favoritos'])o['Favoritos']=[]; return o; } }catch(e){} return {'Favoritos':[]}; }
+  function setL(o){ localStorage.setItem(KEY, JSON.stringify(o)); }
+  function ik(p){ return p.e||p.n; }
+  function estaNa(l,p){ var k=ik(p); return (l||[]).some(function(x){return (x.e||x.n)===k;}); }
+  function togglear(nome,p){ var o=getL(); if(!o[nome])o[nome]=[]; var k=ik(p),i=o[nome].findIndex(function(x){return (x.e||x.n)===k;}); if(i>=0)o[nome].splice(i,1); else o[nome].push({n:p.n,m:p.m||'',e:p.e||'',i:p.i,c:p.c||''}); setL(o); return i<0; }
+  function prodDe(el){ var i=el.getAttribute('data-i'); return (i!=null&&window.__RES__)?window.__RES__[+i]:null; }
+  function esc2(s){ return (s||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   function money(v){ return (v==null)?'—':('R$ '+Number(v).toFixed(2).replace('.',',')); }
-  function setCart(n){ document.getElementById('cartn').textContent=n; }
-  function fecharDrawer(){ document.getElementById('drawer').classList.remove('open'); }
-  fetch('/api/health').then(function(r){return r.json();}).then(function(h){
-    if(h&&h.ok){ BACKEND=true; document.body.classList.add('backend');
-      document.getElementById('cartbtn').style.display='block'; setCart(h.carrinho||0); }
-  }).catch(function(){});
+  window.fecharDrawer=function(){ drawer.classList.remove('open'); };
+
+  window.atualizarFavs=function(){
+    var fav=getL()['Favoritos']||[], set={}; for(var i=0;i<fav.length;i++) set[fav[i].e||fav[i].n]=1;
+    var bs=document.querySelectorAll('.prod .fav'); for(var j=0;j<bs.length;j++){ var p=prodDe(bs[j]); bs[j].classList.toggle('on', !!(p&&set[p.e||p.n])); }
+    var lc=document.getElementById('listcount'); if(lc){ var o=getL(),n=0; for(var kk in o)n++; lc.textContent=n; }
+  };
+
+  fetch('/api/health').then(function(r){return r.json();}).then(function(h){ if(h&&h.ok) BACKEND=true; }).catch(function(){});
+
   document.getElementById('list').addEventListener('click', function(e){
-    if(!BACKEND) return; var c=e.target.closest('.prod'); if(!c) return;
-    abrirPrecos(c.getAttribute('data-nome'));
+    var star=e.target.closest('.fav');
+    if(star){ var p=prodDe(star); if(p){ var add=togglear('Favoritos',p); star.classList.toggle('on',add); window.atualizarFavs(); } return; }
+    var card=e.target.closest('.prod'); if(card) abrirProduto(prodDe(card));
   });
-  function abrirPrecos(nome){
-    var d=document.getElementById('drawer'), body=document.getElementById('dbody');
-    document.getElementById('dtitle').textContent=nome;
-    body.innerHTML='<div class="dload">buscando preços ao vivo nas lojas…</div>'; d.classList.add('open');
-    fetch('/api/precos?termo='+encodeURIComponent(nome)).then(function(r){return r.json();}).then(function(res){
-      CUR={nome:nome, lojas:(res.lojas||[]).filter(function(x){return x.preco;})};
-      if(!CUR.lojas.length){ body.innerHTML='<div class="dload">nenhuma loja retornou preço.</div>'; return; }
-      body.innerHTML = CUR.lojas.map(function(x,i){
-        var eff=x.promo||x.preco;
-        var extra = x.promo?' <span style="color:var(--amber)">promo</span>':(x.atacado?' <span style="color:var(--faint)">atac '+money(x.atacado)+'</span>':'');
-        return '<div class="prow'+(x.barato?' barato':'')+'"><div class="pl"><b>'+x.loja+'</b>'
-             + '<small>'+((x.produto||'').slice(0,44))+' · '+(x.pu||'')+'</small></div>'
-             + '<div class="pp">'+money(eff)+extra+'</div>'
-             + '<button class="padd" data-i="'+i+'">＋</button></div>';
-      }).join('');
-    }).catch(function(){ body.innerHTML='<div class="dload">erro ao buscar preços.</div>'; });
+
+  function abrirProduto(p){
+    if(!p) return; CURP=p; dtitle.textContent=p.n;
+    var o=getL();
+    var chips=Object.keys(o).map(function(nm){ return '<button class="lchip'+(estaNa(o[nm],p)?' on':'')+'" data-lista="'+esc2(nm)+'">'+esc2(nm)+'</button>'; }).join('')
+      + '<button class="lchip nova" data-nova="1">＋ nova lista</button>';
+    dbody.innerHTML='<div class="dsec">Salvar numa lista</div><div class="lchips">'+chips+'</div>'
+      + (BACKEND?'<div class="dsec" style="margin-top:18px">Preço nas lojas</div><div id="precos"><div class="dload">buscando…</div></div>':'');
+    drawer.classList.add('open');
+    if(BACKEND){
+      fetch('/api/precos?termo='+encodeURIComponent(p.n)).then(function(r){return r.json();}).then(function(res){
+        var box=document.getElementById('precos'); if(!box) return;
+        var ls=(res.lojas||[]).filter(function(x){return x.preco;});
+        box.innerHTML = ls.length? ls.map(function(x){ var eff=x.promo||x.preco; var ex=x.promo?' <span style="color:var(--amber)">promo</span>':(x.atacado?' <span style="color:var(--faint)">atac '+money(x.atacado)+'</span>':'');
+          return '<div class="prow'+(x.barato?' barato':'')+'"><div class="pl"><b>'+x.loja+'</b><small>'+((x.produto||'').slice(0,42))+' · '+(x.pu||'')+'</small></div><div class="pp">'+money(eff)+ex+'</div></div>'; }).join('') : '<div class="dload">sem preço.</div>';
+      }).catch(function(){ var box=document.getElementById('precos'); if(box) box.innerHTML='<div class="dload">erro nos preços.</div>'; });
+    }
   }
-  document.getElementById('dbody').addEventListener('click', function(e){
-    var b=e.target.closest('.padd'); if(!b||b.dataset.i==null) return;
-    var x=CUR.lojas[+b.dataset.i]; if(!x) return;
-    fetch('/api/carrinho',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({loja:x.loja,produto:x.produto,preco:(x.promo||x.preco),termo:CUR.nome})})
-      .then(function(r){return r.json();}).then(function(d){ setCart(d.n); b.textContent='✓'; });
+
+  function abrirListas(){
+    var o=getL(); dtitle.textContent='Minhas listas';
+    var rows=Object.keys(o).map(function(nm){ return '<div class="lrow"><b>'+esc2(nm)+'</b><span>'+o[nm].length+' itens</span><button class="lact" data-ver="'+esc2(nm)+'">ver</button></div>'; }).join('');
+    dbody.innerHTML=rows+'<div class="lmanage"><button class="lact" data-nova2="1">＋ nova lista</button></div>';
+    drawer.classList.add('open');
+  }
+  function verLista(nm){
+    var o=getL(), itens=o[nm]||[]; dtitle.textContent=nm;
+    var body=itens.length? itens.map(function(it,idx){ var img=it.i?'<img class="lthumb" src="https://atacadaobr.vtexassets.com/arquivos/ids/'+it.i+'-64-64/p.jpg" onerror="this.style.visibility=\'hidden\'">':'<span class="lthumb"></span>';
+      return '<div class="prow">'+img+'<div class="pl"><b>'+esc2(it.n)+'</b><small>'+esc2(it.m||'')+'</small></div><button class="lx" data-del-item="'+idx+'" data-lista="'+esc2(nm)+'">✕</button></div>'; }).join('') : '<div class="dload">lista vazia — favorite produtos com a ★.</div>';
+    dbody.innerHTML='<button class="lback" data-voltar="1">‹ voltar</button>'+body
+      +'<div class="lmanage">'+(nm!=='Favoritos'?'<button class="lact" data-renomear="'+esc2(nm)+'">renomear</button><button class="lact del" data-apagar="'+esc2(nm)+'">apagar lista</button>':'')+'</div>';
+    drawer.classList.add('open');
+  }
+
+  dbody.addEventListener('click', function(e){
+    var t=e.target, chip=t.closest('.lchip');
+    if(chip && CURP){
+      if(chip.getAttribute('data-nova')){ var nm=prompt('Nome da nova lista:'); if(nm&&nm.trim()){ togglear(nm.trim(),CURP); abrirProduto(CURP); window.atualizarFavs(); } }
+      else { var nm2=chip.getAttribute('data-lista'); var add=togglear(nm2,CURP); chip.classList.toggle('on',add); window.atualizarFavs(); }
+      return;
+    }
+    if(t.getAttribute('data-ver')){ verLista(t.getAttribute('data-ver')); return; }
+    if(t.getAttribute('data-nova2')){ var n=prompt('Nome da nova lista:'); if(n&&n.trim()){ var oa=getL(); oa[n.trim()]=oa[n.trim()]||[]; setL(oa); abrirListas(); window.atualizarFavs(); } return; }
+    if(t.getAttribute('data-voltar')){ abrirListas(); return; }
+    if(t.getAttribute('data-del-item')!=null && t.getAttribute('data-lista')){ var od=getL(),ln=t.getAttribute('data-lista'); od[ln].splice(+t.getAttribute('data-del-item'),1); setL(od); verLista(ln); window.atualizarFavs(); return; }
+    if(t.getAttribute('data-apagar')){ var la=t.getAttribute('data-apagar'); if(confirm('Apagar a lista "'+la+'"?')){ var oe=getL(); delete oe[la]; setL(oe); abrirListas(); window.atualizarFavs(); } return; }
+    if(t.getAttribute('data-renomear')){ var lr=t.getAttribute('data-renomear'); var nn=prompt('Novo nome:',lr); if(nn&&nn.trim()&&nn.trim()!==lr){ var of=getL(); of[nn.trim()]=of[lr]; delete of[lr]; setL(of); verLista(nn.trim()); window.atualizarFavs(); } return; }
   });
-  function verCarrinho(){
-    var d=document.getElementById('drawer'), body=document.getElementById('dbody');
-    document.getElementById('dtitle').textContent='Carrinho da família';
-    body.innerHTML='<div class="dload">carregando…</div>'; d.classList.add('open');
-    fetch('/api/carrinho').then(function(r){return r.json();}).then(function(c){
-      if(!c.itens.length){ body.innerHTML='<div class="dload">carrinho vazio — clique num produto para ver preços e adicionar.</div>'; return; }
-      body.innerHTML = c.itens.map(function(it){
-        return '<div class="prow"><div class="pl"><b>'+(it.termo||it.produto||'')+'</b><small>'+(it.loja||'')+'</small></div><div class="pp">'+money(it.preco)+'</div></div>';
-      }).join('') + '<div class="prow"><div class="pl"><b>Total</b></div><div class="pp" style="color:var(--accent);font-weight:700">'+money(c.total)+'</div></div>'
-        + '<div style="margin-top:14px;text-align:right"><button class="padd" style="background:var(--panel);color:var(--muted)" onclick="limparCarrinho()">limpar</button></div>';
-    });
-  }
-  function limparCarrinho(){ fetch('/api/carrinho',{method:'DELETE'}).then(function(r){return r.json();}).then(function(){ setCart(0); verCarrinho(); }); }
+
+  document.getElementById('listbtn').addEventListener('click', abrirListas);
+  window.atualizarFavs();
 </script>
 </body>
 </html>
