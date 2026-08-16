@@ -82,6 +82,7 @@
   <div class="searchbar">
     <input id="q" type="search" placeholder="Buscar por nome ou marca — ex.: café, azeite, detergente…" autocomplete="off" disabled>
     <div class="filtros">
+      <button class="chip scan" id="scanbtn" type="button" style="display:none">📷 escanear código</button>
       <select id="cat" title="Filtrar por categoria"><option value="">Todas as categorias</option></select>
       <span class="chip" id="cLow" role="button" aria-pressed="false">low-carb</span>
       <span class="chip" id="cHi" role="button" aria-pressed="false">nota alta (≥80)</span>
@@ -144,33 +145,39 @@
 
   function buscar(){
     if(!pronto) return;
-    var termo = norm(q.value.trim()), cat = catSel.value;
+    var raw = q.value.trim();
+    var termo = norm(raw), cat = catSel.value;
     var words = termo.split(/\s+/).filter(Boolean);
-    if(!words.length && !cat && !fLow && !fHi){
-      list.innerHTML=''; count.textContent=''; msg.style.display='block';
+    var barcode = /^\d{8,14}$/.test(raw);   // veio do leitor (ou o número foi digitado)
+    if(!words.length && !cat && !fLow && !fHi && !barcode){
+      list.innerHTML=''; count.textContent=''; window.__RES__=[]; msg.style.display='block';
       msg.textContent='Digite algo ou escolha uma categoria.'; return;
     }
     var matches = [];
-    for(var i=0;i<DADOS.length;i++){
-      var p = DADOS[i];
-      if(fLow && p.l!==1) continue;
-      if(fHi && !(p.q>=80)) continue;
-      if(cat && p.c!==cat) continue;
-      if(words.length){
-        var ok=true; for(var j=0;j<words.length;j++){ if(p._h.indexOf(words[j])<0){ ok=false; break; } }
-        if(!ok) continue;
+    if(barcode){
+      for(var i=0;i<DADOS.length;i++){ var pe=DADOS[i].e; if(pe && (''+pe)===raw) matches.push(DADOS[i]); }
+    } else {
+      for(var i=0;i<DADOS.length;i++){
+        var p = DADOS[i];
+        if(fLow && p.l!==1) continue;
+        if(fHi && !(p.q>=80)) continue;
+        if(cat && p.c!==cat) continue;
+        if(words.length){
+          var ok=true; for(var j=0;j<words.length;j++){ if(p._h.indexOf(words[j])<0){ ok=false; break; } }
+          if(!ok) continue;
+        }
+        matches.push(p);
       }
-      matches.push(p);
     }
     var achou = matches.length;
-    if(words.length){
+    if(!barcode && words.length){
       for(var m=0;m<matches.length;m++){ matches[m]._s = score(matches[m], termo, words); }
       matches.sort(function(a,b){ return b._s - a._s; });
-    } else {
+    } else if(!barcode){
       matches.sort(function(a,b){ return (b.q||0) - (a.q||0); });   // categoria só: melhores notas primeiro
     }
     msg.style.display = achou? 'none':'block';
-    if(!achou){ list.innerHTML=''; count.textContent=''; msg.textContent='Nada encontrado.'; return; }
+    if(!achou){ list.innerHTML=''; count.textContent=''; window.__RES__=[]; msg.textContent = barcode?('Código '+raw+' não está no catálogo — veja o preço abaixo.'):'Nada encontrado.'; return; }
     var res = matches.slice(0, 60);
     window.__RES__ = res;
     count.textContent = 'mostrando '+res.length+' de '+achou.toLocaleString('pt-BR');
@@ -239,6 +246,16 @@
   .lthumb{width:38px;height:38px;flex:0 0 38px;border-radius:7px;object-fit:contain;background:#fff}
   .lback{background:transparent;border:none;color:var(--accent);font-size:13px;font-weight:600;cursor:pointer;padding:0 0 10px}
   .lmanage{display:flex;gap:8px;margin-top:16px;justify-content:flex-end}
+  .eqv{font-family:var(--mono);font-size:9.5px;font-weight:600;color:var(--amber);border:1px solid #6b5323;border-radius:5px;padding:1px 5px;margin-left:7px;vertical-align:middle;letter-spacing:.02em}
+  .amzbtn{display:block;text-align:center;margin-top:16px;background:var(--panel);border:1px solid var(--line2);color:var(--muted);border-radius:9px;padding:9px 14px;font-size:13px;font-weight:600;text-decoration:none}
+  .amzbtn:hover{color:var(--ink);border-color:var(--accent)}
+  .chip.scan{cursor:pointer;color:var(--accent);border-color:var(--accent);background:rgba(86,217,140,.08);font-family:var(--sans);font-size:13px;padding:6px 14px}
+  #scanov{position:fixed;inset:0;z-index:200;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  #scanvid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .scanbox{position:relative;z-index:1;width:76%;max-width:340px;height:150px;border:2px solid var(--accent);border-radius:14px;box-shadow:0 0 0 3000px rgba(0,0,0,.5)}
+  .scantop{position:absolute;top:0;left:0;right:0;z-index:2;display:flex;justify-content:space-between;padding:14px 16px}
+  .scantop button{background:rgba(0,0,0,.6);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:10px;padding:10px 15px;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--sans)}
+  .scanmsg{position:absolute;bottom:46px;left:0;right:0;z-index:2;text-align:center;color:#fff;font-size:14px;font-weight:600;text-shadow:0 1px 4px #000;padding:0 22px}
 </style>
 <script>
   // ===== LISTAS (client-side, localStorage — funciona no site público) =====
@@ -277,15 +294,18 @@
     var o=getL();
     var chips=Object.keys(o).map(function(nm){ return '<button class="lchip'+(estaNa(o[nm],p)?' on':'')+'" data-lista="'+esc2(nm)+'">'+esc2(nm)+'</button>'; }).join('')
       + '<button class="lchip nova" data-nova="1">＋ nova lista</button>';
+    var amzQ = encodeURIComponent(p.e || p.n || '');
     dbody.innerHTML='<div class="dsec">Salvar numa lista</div><div class="lchips">'+chips+'</div>'
-      + (precosOn()?'<div class="dsec" style="margin-top:18px">Preço nas lojas</div><div id="precos"><div class="dload">buscando…</div></div>':'');
+      + (precosOn()?'<div class="dsec" style="margin-top:18px">Preço nas lojas</div><div id="precos"><div class="dload">buscando…</div></div>':'')
+      + '<a class="amzbtn" href="https://www.amazon.com.br/s?k='+amzQ+'" target="_blank" rel="noopener">🔎 buscar na Amazon</a>';
     drawer.classList.add('open');
     if(precosOn()){
       fetch(precoURL(p.n,p.e)).then(function(r){return r.json();}).then(function(res){
         var box=document.getElementById('precos'); if(!box) return;
         var ls=(res.lojas||[]).filter(function(x){return x.preco;});
         box.innerHTML = ls.length? ls.map(function(x){ var eff=x.promo||x.preco; var ex=x.promo?' <span style="color:var(--amber)">promo</span>':(x.atacado?' <span style="color:var(--faint)">atac '+money(x.atacado)+'</span>':'');
-          return '<div class="prow'+(x.barato?' barato':'')+'"><div class="pl"><b>'+x.loja+'</b><small>'+((x.produto||'').slice(0,42))+' · '+(x.pu||'')+'</small></div><div class="pp">'+money(eff)+ex+'</div></div>'; }).join('') : '<div class="dload">sem preço.</div>';
+          var eqv=(x.match==='equivalente')?' <span class="eqv">≈ equivalente</span>':'';
+          return '<div class="prow'+(x.barato?' barato':'')+'"><div class="pl"><b>'+esc2(x.loja)+'</b>'+eqv+'<small>'+esc2((x.produto||'').slice(0,46))+' · '+esc2(x.pu||'')+'</small></div><div class="pp">'+money(eff)+ex+'</div></div>'; }).join('') : '<div class="dload">nenhum equivalente encontrado.</div>';
       }).catch(function(){ var box=document.getElementById('precos'); if(box) box.innerHTML='<div class="dload">erro nos preços.</div>'; });
     }
   }
@@ -322,6 +342,107 @@
 
   document.getElementById('listbtn').addEventListener('click', abrirListas);
   window.atualizarFavs();
+</script>
+
+<script>
+  // ===== LEITOR DE CÓDIGO DE BARRAS (EAN-13) — BarcodeDetector nativo (Android) =====
+  (function(){
+    var btn=document.getElementById('scanbtn');
+    if(!btn || !('BarcodeDetector' in window)) return;   // só aparece onde é suportado (Android Chrome)
+    try{
+      window.BarcodeDetector.getSupportedFormats().then(function(fmts){
+        if(fmts.indexOf('ean_13')>=0) btn.style.display='';
+      }).catch(function(){});
+    }catch(e){ return; }
+
+    var detector=null, stream=null, track=null, timer=null, rodando=false, torchOn=false, ov=null;
+
+    function ean13valido(c){                         // dígito verificador mod-10 (evita leitura errada)
+      if(!/^\d{13}$/.test(c)) return false;
+      var s=0; for(var i=0;i<12;i++){ s += (+c[i])*(i%2?3:1); }
+      return ((10-(s%10))%10) === (+c[12]);
+    }
+    function normaliza(c){ c=(c||'').replace(/\D/g,''); if(/^\d{12}$/.test(c)) c='0'+c; return c; } // UPC-A -> EAN-13
+
+    function setMsg(t){ var m=document.getElementById('scanmsg'); if(m) m.textContent=t; }
+
+    function abrir(){
+      if(rodando) return; rodando=true;
+      ov=document.createElement('div'); ov.id='scanov';
+      ov.innerHTML='<video id="scanvid" playsinline muted></video><div class="scanbox"></div>'
+        +'<div class="scantop"><button id="scanx" type="button">✕ fechar</button>'
+        +'<button id="scantorch" type="button" style="display:none">🔦 luz</button></div>'
+        +'<div class="scanmsg" id="scanmsg">Aponte para o código de barras</div>';
+      document.body.appendChild(ov);
+      document.getElementById('scanx').onclick=fechar;
+      document.getElementById('scantorch').onclick=luz;
+      iniciar();
+    }
+
+    function iniciar(){
+      try{ detector=new window.BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e']}); }
+      catch(e){ setMsg('Leitor não suportado neste aparelho.'); return; }
+      navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}})
+        .then(function(s){
+          stream=s; var v=document.getElementById('scanvid'); v.srcObject=s;
+          track=s.getVideoTracks()[0];
+          try{ var caps=track.getCapabilities&&track.getCapabilities(); if(caps&&caps.torch){ var tb=document.getElementById('scantorch'); if(tb) tb.style.display=''; } }catch(e){}
+          try{ track.applyConstraints({advanced:[{focusMode:'continuous'}]}); }catch(e){}
+          return v.play();
+        })
+        .then(function(){ ler(); })
+        .catch(function(err){
+          var n=err&&err.name;
+          setMsg(n==='NotAllowedError'?'Permissão de câmera negada.'
+               :n==='NotFoundError'?'Nenhuma câmera encontrada.'
+               :n==='NotReadableError'?'A câmera está em uso por outro app.'
+               :'Não consegui abrir a câmera.');
+        });
+    }
+
+    function ler(){
+      if(!rodando) return;
+      var v=document.getElementById('scanvid');
+      if(v && v.readyState>=2 && detector){
+        detector.detect(v).then(function(codes){
+          for(var i=0;i<codes.length;i++){
+            var c=normaliza(codes[i].rawValue);
+            if(ean13valido(c)){ achou(c); return; }
+          }
+          if(rodando) timer=setTimeout(ler,120);
+        }).catch(function(){ if(rodando) timer=setTimeout(ler,160); });
+      } else if(rodando){ timer=setTimeout(ler,120); }
+    }
+
+    function achou(ean){
+      if(navigator.vibrate) navigator.vibrate(80);
+      fechar();
+      if(typeof q!=='undefined'){ q.value=ean; }
+      if(typeof buscar==='function') buscar();
+      setTimeout(function(){
+        var r=window.__RES__;
+        if(r && r.length){ abrirProduto(r[0]); }
+        else if(typeof abrirProduto==='function'){ abrirProduto({n:'Código '+ean, m:'', c:'', e:ean, i:null}); }
+      },220);
+    }
+
+    function luz(){
+      if(!track) return; torchOn=!torchOn;
+      try{ track.applyConstraints({advanced:[{torch:torchOn}]}); }catch(e){}
+    }
+
+    function fechar(){
+      rodando=false;
+      if(timer){ clearTimeout(timer); timer=null; }
+      if(track && torchOn){ try{ track.applyConstraints({advanced:[{torch:false}]}); }catch(e){} }
+      if(stream){ stream.getTracks().forEach(function(t){ t.stop(); }); stream=null; }
+      track=null; torchOn=false; detector=null;
+      if(ov){ ov.remove(); ov=null; }
+    }
+
+    document.addEventListener('visibilitychange', function(){ if(document.hidden && rodando) fechar(); });
+    btn.addEventListener('click', abrir);
+  })();
 </script>
 </body>
 </html>
