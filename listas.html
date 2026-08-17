@@ -649,13 +649,18 @@ function carregar(){
 }
 function porta(){
   el('sub').textContent='Esta área é da família.';
-  el('conteudo').innerHTML='<div class="porta"><div style="font-size:34px">🔑</div>'
-    + '<p style="color:var(--muted);font-size:14px">Cole aqui o código da casa (o Mario manda o link por WhatsApp — abrindo por ele, já entra direto).</p>'
-    + '<input id="tk" placeholder="código da casa" autocomplete="off">'
-    + '<button class="bt pri" id="entrar" style="width:100%;padding:13px">entrar</button></div>';
+  el('conteudo').innerHTML='<div class="porta"><div style="font-size:34px">🔒</div>'
+    + '<p style="color:var(--muted);font-size:14px">Entre com a senha da família.</p>'
+    + '<input id="tk" type="password" placeholder="senha" autocomplete="off">'
+    + '<button class="bt pri" id="entrar" style="width:100%;padding:13px">entrar</button>'
+    + '<div id="tkerr" style="color:var(--red);font-size:13px;height:16px;margin-top:8px"></div></div>';
   el('entrar').onclick=function(){
     var v=el('tk').value.trim(); if(!v) return;
-    localStorage.setItem(TKEY,v); carregar();
+    el('tkerr').textContent='entrando…';
+    fetch(WORKER+'/entrar?senha='+encodeURIComponent(v)).then(function(r){return r.json();}).then(function(j){
+      if(j&&j.ok&&j.token){ localStorage.setItem(TKEY,j.token); carregar(); }
+      else { el('tkerr').textContent='senha incorreta'; }
+    }).catch(function(){ el('tkerr').textContent='sem conexão'; });
   };
   el('tk').addEventListener('keydown',function(e){ if(e.key==='Enter') el('entrar').click(); });
 }

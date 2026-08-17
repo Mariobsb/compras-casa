@@ -31,6 +31,10 @@
   .eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:600;margin:0 0 10px}
   h1{font-weight:800;font-size:clamp(26px,4vw,38px);letter-spacing:-.025em;margin:0 0 10px}
   .obs{color:var(--muted);max-width:72ch;margin:0 0 22px;font-size:15px}
+  /* alternador de visão */
+  .viewsw{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:3px;margin:0 0 18px}
+  .viewsw button{background:none;border:0;color:var(--muted);font-family:var(--sans);font-size:14px;font-weight:700;padding:8px 18px;border-radius:8px;cursor:pointer}
+  .viewsw button.on{background:rgba(86,217,140,.15);color:var(--accent)}
   /* resumo */
   .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(146px,1fr));gap:10px;margin:0 0 18px}
   .kpi{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:12px 14px}
@@ -44,6 +48,14 @@
   .ctrl button{background:var(--panel);border:1px solid var(--line);color:var(--muted);border-radius:9px;padding:7px 14px;font-family:var(--sans);font-size:13.5px;font-weight:600;cursor:pointer}
   .ctrl button.on{background:rgba(86,217,140,.13);border-color:var(--accent);color:var(--accent)}
   .ctrl .sp{margin-left:auto;font-size:13px;color:var(--faint)}
+  .busca{flex:1;min-width:220px;background:var(--bg);border:1px solid var(--line2);color:var(--ink);border-radius:10px;padding:9px 13px;font-family:var(--sans);font-size:14.5px}
+  .busca:focus{outline:none;border-color:var(--accent)}
+  /* banner de trocas */
+  .banner{display:none;background:rgba(231,180,76,.1);border:1px solid rgba(231,180,76,.35);border-radius:13px;padding:13px 16px;margin:0 0 18px;font-size:14.5px;color:#E6DCC4}
+  .banner.on{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .banner b{color:var(--amber)}
+  .banner button{background:var(--amber);color:#201604;border:0;border-radius:9px;padding:7px 14px;font-family:var(--sans);font-size:13.5px;font-weight:700;cursor:pointer}
+  .banner button.sec{background:transparent;color:var(--amber);border:1px solid rgba(231,180,76,.5)}
   /* semanas */
   .semana{margin:0 0 26px}
   .semana>h3{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin:0 0 10px;font-weight:600}
@@ -52,9 +64,13 @@
   .day:hover{border-color:var(--line2)}
   .day.hoje{border-color:var(--accent);box-shadow:0 0 0 1px rgba(86,217,140,.25)}
   .day.fds{background:var(--panel2)}
-  .day-h{display:flex;align-items:baseline;justify-content:space-between;margin:0 0 10px;padding-bottom:9px;border-bottom:1px solid var(--line)}
+  .day.editado{border-color:rgba(231,180,76,.55)}
+  .day-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 10px;padding-bottom:9px;border-bottom:1px solid var(--line)}
   .day-h b{font-size:15.5px;font-weight:800;letter-spacing:-.01em}
-  .day-h span{font-family:var(--mono);font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.09em}
+  .day-h .meta{font-family:var(--mono);font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.09em;margin-left:auto}
+  .day-h .edit{background:var(--panel2);border:1px solid var(--line2);color:var(--muted);border-radius:8px;padding:3px 9px;font-family:var(--sans);font-size:12px;font-weight:600;cursor:pointer;line-height:1.5}
+  .day-h .edit:hover{border-color:var(--accent);color:var(--accent)}
+  .day.editado .day-h .edit{border-color:rgba(231,180,76,.5);color:var(--amber)}
   .meal{padding:6px 0}
   .meal .ml{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--faint);font-weight:700;margin-bottom:2px}
   .meal .dish{font-size:14px;color:#D8E3DB;cursor:pointer;border-bottom:1px dotted transparent}
@@ -64,6 +80,16 @@
   .meal.snack .ml{color:var(--amber)}
   .meal.main .dish{font-weight:600;font-size:14.5px}
   .fav{color:var(--amber);font-size:11px}
+  .trocado{color:var(--amber);font-size:10px;font-family:var(--mono)}
+  /* lista de receitas */
+  .cat{margin:0 0 22px}
+  .cat h3{display:flex;align-items:baseline;gap:10px;font-size:16.5px;font-weight:800;letter-spacing:-.01em;margin:0 0 4px}
+  .cat h3 span{font-family:var(--mono);font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.1em}
+  .recs{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px;margin-top:10px}
+  .rec{display:flex;align-items:baseline;gap:9px;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:10px 13px;cursor:pointer;text-align:left;font-family:var(--sans);color:var(--ink);width:100%}
+  .rec:hover{border-color:var(--accent)}
+  .rec .n{font-size:14px;font-weight:600;flex:1}
+  .rec .t{font-family:var(--mono);font-size:10.5px;color:var(--faint);white-space:nowrap}
   /* modal */
   .ov{position:fixed;inset:0;background:rgba(6,10,8,.78);backdrop-filter:blur(4px);z-index:100;display:none;align-items:flex-start;justify-content:center;padding:38px 16px;overflow-y:auto}
   .ov.on{display:flex}
@@ -84,9 +110,20 @@
   .card .nut b{display:block;font-size:16px;font-weight:800}
   .card .nut span{font-size:10px;color:var(--faint);font-family:var(--mono);text-transform:uppercase}
   .card .fechar{float:right;background:none;border:1px solid var(--line2);color:var(--muted);border-radius:8px;width:32px;height:32px;font-size:17px;cursor:pointer;line-height:1}
-  .alts{display:flex;gap:6px;flex-wrap:wrap}
-  .alts button{background:var(--panel2);border:1px solid var(--line2);color:var(--muted);border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:12.5px;cursor:pointer}
-  .alts button:hover{border-color:var(--accent);color:var(--accent)}
+  /* editor do dia */
+  .ed{margin:0 0 4px;padding:13px 0;border-top:1px solid var(--line)}
+  .ed:first-of-type{border-top:0}
+  .ed .lab{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--faint);font-weight:700;margin-bottom:6px}
+  .ed select{width:100%;background:var(--bg);border:1px solid var(--line2);color:var(--ink);border-radius:10px;padding:9px 11px;font-family:var(--sans);font-size:14px}
+  .ed select:focus{outline:none;border-color:var(--accent)}
+  .ed select.mud{border-color:var(--amber)}
+  .ed .ver{background:none;border:0;color:var(--faint);font-family:var(--sans);font-size:12.5px;cursor:pointer;padding:4px 0 0;text-decoration:underline}
+  .ed .ver:hover{color:var(--accent)}
+  .ed .sub2{font-size:12.5px;color:var(--faint);margin:5px 0 0}
+  .edacts{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
+  .edacts button{background:var(--accent);color:#06120B;border:0;border-radius:10px;padding:10px 20px;font-family:var(--sans);font-size:14.5px;font-weight:800;cursor:pointer}
+  .edacts button.sec{background:var(--panel2);color:var(--ink);border:1px solid var(--line2);font-weight:600}
+  .saida{background:#0A100D;border:1px solid var(--line2);border-radius:12px;padding:14px;margin-top:14px;font-family:var(--mono);font-size:12px;color:#B9CCBF;white-space:pre-wrap;word-break:break-word}
   .err{color:var(--amber);font-family:var(--mono);font-size:13px}
   footer{border-top:1px solid var(--line);margin-top:40px;padding:22px 0;color:var(--faint);font-size:12.5px;font-family:var(--mono)}
 </style>
@@ -110,18 +147,37 @@
   <h1 id="titulo">Cardápio</h1>
   <p class="obs" id="obs">Carregando…</p>
 
-  <div class="kpis" id="kpis"></div>
-  <div class="prot" id="prot"></div>
-
-  <div class="ctrl" id="ctrl">
-    <button id="b-tudo" class="on" onclick="filtro('tudo')">Tudo</button>
-    <button id="b-almoco" onclick="filtro('almoco')">Só almoço</button>
-    <button id="b-lanche" onclick="filtro('lanche_escola')">Só lanche da escola</button>
-    <button onclick="irHoje()">Ir para hoje</button>
-    <span class="sp">clique num prato para ver a receita completa</span>
+  <div class="viewsw">
+    <button id="v-mes" class="on" onclick="verView('mes')">Cardápio do mês</button>
+    <button id="v-receitas" onclick="verView('receitas')">Receitas</button>
   </div>
 
-  <div id="mes"></div>
+  <div class="banner" id="banner"></div>
+
+  <div id="view-mes">
+    <div class="kpis" id="kpis"></div>
+    <div class="prot" id="prot"></div>
+    <div class="ctrl">
+      <button id="b-tudo" class="on" onclick="filtro('tudo')">Tudo</button>
+      <button id="b-almoco" onclick="filtro('almoco')">Só almoço</button>
+      <button id="b-lanche" onclick="filtro('lanche_escola')">Só lanche da escola</button>
+      <button onclick="irHoje()">Ir para hoje</button>
+      <span class="sp">clique no prato para a receita · <b>✏️ editar</b> para trocar o dia</span>
+    </div>
+    <div id="mes"></div>
+  </div>
+
+  <div id="view-receitas" style="display:none">
+    <div class="ctrl">
+      <input class="busca" id="q" type="search" placeholder="Buscar receita por nome ou ingrediente…" oninput="renderReceitas()">
+      <button id="f-todas" class="on" onclick="filtroRec('todas')">Todas</button>
+      <button id="f-campeoes" onclick="filtroRec('campeoes')">★ Campeões</button>
+      <button id="f-rapidas" onclick="filtroRec('rapidas')">Até 30 min</button>
+      <button id="f-congela" onclick="filtroRec('congela')">❄️ Congela bem</button>
+    </div>
+    <div id="lista"></div>
+  </div>
+
   <footer id="rodape"></footer>
 </div>
 
@@ -132,11 +188,114 @@
 var C = window.__CARDAPIO__;
 var MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 var ICON = {cafe:'☕', lanche_escola:'🎒', almoco:'🍽️', jantar:'🌙', sobremesa:'🍮'};
-var VER = 'tudo';
+var PAPEL_ROTULO = {leguminosa:'Leguminosa (feijão)', salada:'Salada crua', legume:'Legume cozido', amido:'Arroz / amido'};
+var VER = 'tudo', VIEW = 'mes', FREC = 'todas';
 var HOJE = new Date().toISOString().slice(0,10);
+var CHAVE = C ? 'cardapio-trocas-' + C.ano + '-' + C.mes : 'cardapio-trocas';
+var EDITS = {};
 
 function esc(s){ var d=document.createElement('div'); d.textContent = s==null?'':s; return d.innerHTML; }
+function semAcento(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
+function nomeDe(id){ var r = C.receitas[id]; return r ? r.nome : id; }
 
+/* ---------- trocas salvas no navegador ---------- */
+function carregarEdits(){
+  try { EDITS = JSON.parse(localStorage.getItem(CHAVE) || '{}'); } catch(e){ EDITS = {}; }
+  // limpa sozinho o que já foi aplicado no sistema: se a troca guardada aqui é igual ao
+  // que veio no cardápio, ela deixou de ser uma pendência.
+  var mudou = false;
+  Object.keys(EDITS).forEach(function(data){
+    var dia = C.dias.filter(function(d){ return d.data === data; })[0];
+    if (!dia){ delete EDITS[data]; mudou = true; return; }
+    var e = EDITS[data];
+    Object.keys(e).forEach(function(k){
+      if (k === 'acomp'){
+        var orig = (dia.refeicoes.almoco && dia.refeicoes.almoco.acompanhamentos) || [];
+        e.acomp = e.acomp.map(function(id, i){
+          return (id && orig[i] && orig[i].prato === id) ? null : id;
+        });
+        if (!e.acomp.some(Boolean)){ delete e.acomp; mudou = true; }
+      } else if (dia.refeicoes[k] && dia.refeicoes[k].prato === e[k]){
+        delete e[k]; mudou = true;
+      }
+    });
+    if (!Object.keys(e).length){ delete EDITS[data]; mudou = true; }
+  });
+  if (mudou) { try { localStorage.setItem(CHAVE, JSON.stringify(EDITS)); } catch(err){} }
+}
+function salvarEdits(){
+  try { localStorage.setItem(CHAVE, JSON.stringify(EDITS)); } catch(e){}
+  banner();
+}
+function edicaoDo(data){ return EDITS[data] || null; }
+function pratoDe(dia, ref){
+  var e = edicaoDo(dia.data);
+  if (e && e[ref]) return e[ref];
+  return dia.refeicoes[ref] ? dia.refeicoes[ref].prato : null;
+}
+function acompsDe(dia){
+  var orig = (dia.refeicoes.almoco && dia.refeicoes.almoco.acompanhamentos) || [];
+  var e = edicaoDo(dia.data);
+  return orig.map(function(a, i){
+    var id = (e && e.acomp && e.acomp[i]) ? e.acomp[i] : a.prato;
+    return {prato: id, nome: nomeDe(id), papel: a.papel};
+  });
+}
+function nTrocas(){
+  var n = 0;
+  Object.keys(EDITS).forEach(function(d){
+    var e = EDITS[d];
+    Object.keys(e).forEach(function(k){
+      if (k === 'acomp') n += e.acomp.filter(function(x){ return !!x; }).length;
+      else n++;
+    });
+  });
+  return n;
+}
+
+function banner(){
+  var b = document.getElementById('banner');
+  var n = nTrocas(), dias = Object.keys(EDITS).length;
+  if (!n){ b.className = 'banner'; b.innerHTML = ''; return; }
+  b.className = 'banner on';
+  b.innerHTML = '<span><b>' + n + ' troca' + (n>1?'s':'') + '</b> em ' + dias + ' dia' + (dias>1?'s':'') +
+    ' — salvas só neste navegador. Mande o código para valer no sistema e na lista de compras.</span>';
+  var b1 = document.createElement('button'); b1.textContent = 'Copiar código das trocas';
+  b1.onclick = copiarTrocas; b.appendChild(b1);
+  var b2 = document.createElement('button'); b2.className = 'sec'; b2.textContent = 'Desfazer tudo';
+  b2.onclick = function(){ if(confirm('Desfazer todas as trocas?')){ EDITS = {}; salvarEdits(); render(); } };
+  b.appendChild(b2);
+}
+
+function codigoTrocas(){
+  var trocas = [];
+  Object.keys(EDITS).sort().forEach(function(data){
+    var e = EDITS[data];
+    ['cafe','lanche_escola','almoco','jantar','sobremesa'].forEach(function(ref){
+      if (e[ref]) trocas.push({data:data, refeicao:ref, prato:e[ref]});
+    });
+    (e.acomp || []).forEach(function(id, i){
+      if (id) trocas.push({data:data, refeicao:'acompanhamento', posicao:i, prato:id});
+    });
+  });
+  return '⚙️ código: ' + JSON.stringify({mes: C.ano + '-' + String(C.mes).padStart(2,'0'), trocas: trocas});
+}
+function copiarTrocas(){
+  var t = codigoTrocas();
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(function(){ alert('Código copiado! Cole no chat ou mande no WhatsApp.'); },
+      function(){ mostrarCodigo(t); });
+  } else mostrarCodigo(t);
+}
+function mostrarCodigo(t){
+  document.getElementById('card').innerHTML =
+    '<button class="fechar" onclick="fechar()">×</button><h2>Código das trocas</h2>' +
+    '<p class="sub">Selecione o texto abaixo e copie. Cole no chat que eu aplico no cardápio e refaço a lista de compras.</p>' +
+    '<div class="saida">' + esc(t) + '</div>';
+  document.getElementById('ov').classList.add('on');
+}
+
+/* ---------- receita ---------- */
 function fmtQtd(i){
   if (i.qtd == null) return i.item;
   var q = i.qtd, u = i.un || '';
@@ -147,10 +306,10 @@ function fmtQtd(i){
   return (String(q)+' '+u).trim() + ' de ' + i.item;
 }
 
-function receita(id){
+function receita(id, voltarPara){
   var r = (C.receitas || {})[id];
   if (!r) return;
-  var h = ['<button class="fechar" onclick="fechar()">×</button>'];
+  var h = ['<button class="fechar" onclick="' + (voltarPara ? 'abrirEditor(\'' + voltarPara + '\')' : 'fechar()') + '">×</button>'];
   h.push('<h2>' + esc(r.nome) + '</h2>');
   if (r.descricao) h.push('<p class="sub">' + esc(r.descricao) + '</p>');
   var m = [];
@@ -198,14 +357,114 @@ function receita(id){
     h.push('</div>');
   }
   if (r.sobras) h.push('<h4>Sobras</h4><p style="font-size:14.5px;color:#D8E3DB;margin:0">♻️ ' + esc(r.sobras) + '</p>');
+  if (voltarPara) h.push('<div class="edacts"><button class="sec" onclick="abrirEditor(\'' + voltarPara + '\')">← Voltar para a edição do dia</button></div>');
 
   document.getElementById('card').innerHTML = h.join('');
   document.getElementById('ov').classList.add('on');
-  document.getElementById('card').scrollIntoView({block:'start'});
+  document.getElementById('card').scrollTop = 0;
 }
 function fechar(){ document.getElementById('ov').classList.remove('on'); }
 document.addEventListener('keydown', function(e){ if (e.key === 'Escape') fechar(); });
 
+/* ---------- editor do dia ---------- */
+function opcoes(ids, atual, sugeridos){
+  var s = '';
+  if (sugeridos && sugeridos.length){
+    s += '<optgroup label="Sugestões do nutricionista">';
+    sugeridos.forEach(function(id){
+      s += '<option value="' + id + '"' + (id===atual?' selected':'') + '>' + esc(nomeDe(id)) + '</option>';
+    });
+    s += '</optgroup>';
+  }
+  var vistos = {};
+  (sugeridos||[]).forEach(function(i){ vistos[i]=1; });
+  s += '<optgroup label="Todas as receitas">';
+  ids.forEach(function(id){
+    if (vistos[id] && id !== atual) return;
+    var r = C.receitas[id] || {};
+    s += '<option value="' + id + '"' + (id===atual?' selected':'') + '>' +
+         esc(r.nome || id) + (r.campeao ? ' ★' : '') + (r.tempo_min ? ' · ' + r.tempo_min + ' min' : '') + '</option>';
+  });
+  s += '</optgroup>';
+  return s;
+}
+
+function abrirEditor(data){
+  var dia = C.dias.filter(function(d){ return d.data === data; })[0];
+  if (!dia) return;
+  var e = edicaoDo(data) || {};
+  var h = ['<button class="fechar" onclick="fechar()">×</button>'];
+  h.push('<h2>Editar ' + dia.dia_semana.toLowerCase() + ', ' + data.slice(8,10) + '/' + data.slice(5,7) + '</h2>');
+  h.push('<p class="sub">Troque qualquer prato do dia. As sugestões do nutricionista vêm primeiro; abaixo delas está o banco inteiro de receitas daquela vaga.</p>');
+
+  C.refeicoes.forEach(function(ref){
+    var r = dia.refeicoes[ref];
+    if (!r) return;
+    var pool = (C.pools || {})[ref] || [];
+    var atual = pratoDe(dia, ref);
+    var sug = (r.alternativas || []).map(function(a){ return a.prato; });
+    sug.unshift(r.prato);
+    h.push('<div class="ed"><div class="lab">' + (ICON[ref]||'') + ' ' + esc(C.rotulos[ref]||ref) + '</div>');
+    h.push('<select id="sel-' + ref + '" onchange="marcar(this,\'' + esc(r.prato) + '\')">' + opcoes(pool, atual, sug) + '</select>');
+    h.push('<button class="ver" onclick="receita(document.getElementById(\'sel-' + ref + '\').value, \'' + data + '\')">ver a receita selecionada</button>');
+    if (ref === 'lanche_escola') h.push('<p class="sub2">Sem açúcar de adição — só entram receitas do lanche escolar.</p>');
+    if (ref === 'cafe') h.push('<p class="sub2">O Mário está em jejum e não participa do café.</p>');
+    h.push('</div>');
+  });
+
+  var acomps = acompsDe(dia);
+  if (acomps.length){
+    h.push('<div class="ed"><div class="lab">🥗 Acompanhamentos do almoço</div>');
+    h.push('<p class="sub2" style="margin:0 0 9px">O almoço tem 5 componentes: proteína + leguminosa + salada crua + legume cozido + amido.</p>');
+    acomps.forEach(function(a, i){
+      var pool = ((C.pools||{}).acompanhamento || {})[a.papel] || [];
+      h.push('<div style="margin-bottom:9px"><div class="lab" style="font-size:10px">' + esc(PAPEL_ROTULO[a.papel] || a.papel || 'Acompanhamento') + '</div>');
+      h.push('<select id="sel-ac-' + i + '" onchange="marcar(this,\'' + esc((dia.refeicoes.almoco.acompanhamentos[i]||{}).prato || '') + '\')">' + opcoes(pool, a.prato, null) + '</select></div>');
+    });
+    h.push('</div>');
+  }
+
+  h.push('<div class="edacts">');
+  h.push('<button onclick="salvarEditor(\'' + data + '\')">Salvar o dia</button>');
+  if (e && Object.keys(e).length) h.push('<button class="sec" onclick="desfazerDia(\'' + data + '\')">Desfazer este dia</button>');
+  h.push('<button class="sec" onclick="fechar()">Cancelar</button>');
+  h.push('</div>');
+
+  document.getElementById('card').innerHTML = h.join('');
+  document.getElementById('ov').classList.add('on');
+  document.getElementById('card').scrollTop = 0;
+}
+
+function marcar(sel, original){ sel.className = (sel.value !== original) ? 'mud' : ''; }
+
+function salvarEditor(data){
+  var dia = C.dias.filter(function(d){ return d.data === data; })[0];
+  var e = {};
+  C.refeicoes.forEach(function(ref){
+    var s = document.getElementById('sel-' + ref);
+    if (s && dia.refeicoes[ref] && s.value !== dia.refeicoes[ref].prato) e[ref] = s.value;
+  });
+  var orig = (dia.refeicoes.almoco && dia.refeicoes.almoco.acompanhamentos) || [];
+  var ac = [], mudou = false;
+  orig.forEach(function(a, i){
+    var s = document.getElementById('sel-ac-' + i);
+    if (s && s.value !== a.prato){ ac[i] = s.value; mudou = true; } else ac[i] = null;
+  });
+  if (mudou) e.acomp = ac;
+  if (Object.keys(e).length) EDITS[data] = e; else delete EDITS[data];
+  salvarEdits(); render(); fechar();
+}
+function desfazerDia(data){ delete EDITS[data]; salvarEdits(); render(); fechar(); }
+
+/* ---------- visões ---------- */
+function verView(v){
+  VIEW = v;
+  document.getElementById('v-mes').className = v==='mes' ? 'on' : '';
+  document.getElementById('v-receitas').className = v==='receitas' ? 'on' : '';
+  document.getElementById('view-mes').style.display = v==='mes' ? '' : 'none';
+  document.getElementById('view-receitas').style.display = v==='receitas' ? '' : 'none';
+  if (v === 'receitas') renderReceitas();
+}
 function filtro(v){
   VER = v;
   ['tudo','almoco','lanche'].forEach(function(k){
@@ -214,10 +473,52 @@ function filtro(v){
   });
   render();
 }
+function filtroRec(v){
+  FREC = v;
+  ['todas','campeoes','rapidas','congela'].forEach(function(k){
+    var b = document.getElementById('f-'+k);
+    if (b) b.className = (v===k) ? 'on' : '';
+  });
+  renderReceitas();
+}
 function irHoje(){
   var el = document.getElementById('d-' + HOJE);
   if (el) el.scrollIntoView({behavior:'smooth', block:'center'});
   else alert('Hoje não está neste mês do cardápio.');
+}
+
+function renderReceitas(){
+  var alvo = document.getElementById('lista'); alvo.innerHTML = '';
+  var q = semAcento(document.getElementById('q').value.trim());
+  var cat = C.catalogo || {ordem:[], rotulos:{}, por_categoria:{}};
+  var achou = 0;
+  cat.ordem.forEach(function(k){
+    var ids = (cat.por_categoria[k] || []).filter(function(id){
+      var r = C.receitas[id]; if (!r) return false;
+      if (FREC === 'campeoes' && !r.campeao) return false;
+      if (FREC === 'rapidas' && !(r.tempo_min && r.tempo_min <= 30)) return false;
+      if (FREC === 'congela' && (r.tags||[]).indexOf('congela_bem') < 0) return false;
+      if (!q) return true;
+      var alvoTxt = semAcento(r.nome + ' ' + (r.descricao||'') + ' ' +
+        (r.ingredientes||[]).map(function(i){return i.item;}).join(' '));
+      return alvoTxt.indexOf(q) >= 0;
+    });
+    if (!ids.length) return;
+    achou += ids.length;
+    var box = document.createElement('div'); box.className = 'cat';
+    box.innerHTML = '<h3>' + esc(cat.rotulos[k] || k) + ' <span>' + ids.length + ' receita' + (ids.length>1?'s':'') + '</span></h3>';
+    var grid = document.createElement('div'); grid.className = 'recs';
+    ids.forEach(function(id){
+      var r = C.receitas[id];
+      var b = document.createElement('button'); b.className = 'rec';
+      b.innerHTML = '<span class="n">' + esc(r.nome) + (r.campeao ? ' <span class="fav">★</span>' : '') + '</span>' +
+                    '<span class="t">' + (r.tempo_min ? r.tempo_min + ' min' : '') + '</span>';
+      b.onclick = function(){ receita(id); };
+      grid.appendChild(b);
+    });
+    box.appendChild(grid); alvo.appendChild(box);
+  });
+  if (!achou) alvo.innerHTML = '<p class="obs">Nenhuma receita encontrada.</p>';
 }
 
 function render(){
@@ -233,12 +534,19 @@ function render(){
       semana = document.createElement('div'); semana.className = 'week';
       box.appendChild(semana); mes.appendChild(box);
     }
+    var editado = !!edicaoDo(d.data);
     var day = document.createElement('div');
-    day.className = 'day' + (d.dia_util ? '' : ' fds') + (d.data === HOJE ? ' hoje' : '');
+    day.className = 'day' + (d.dia_util ? '' : ' fds') + (d.data === HOJE ? ' hoje' : '') + (editado ? ' editado' : '');
     day.id = 'd-' + d.data;
     var dia = d.data.slice(8,10) + '/' + d.data.slice(5,7);
-    day.innerHTML = '<div class="day-h"><b>' + d.dia_semana + ' ' + dia + '</b><span>' +
-      (d.letivo ? 'aula' : (d.dia_util ? '' : 'fim de semana')) + '</span></div>';
+
+    var head = document.createElement('div'); head.className = 'day-h';
+    head.innerHTML = '<b>' + d.dia_semana + ' ' + dia + '</b>' +
+      '<span class="meta">' + (editado ? 'editado' : (d.letivo ? 'aula' : (d.dia_util ? '' : 'fim de semana'))) + '</span>';
+    var bt = document.createElement('button'); bt.className = 'edit'; bt.textContent = '✏️ editar';
+    bt.onclick = function(){ abrirEditor(d.data); };
+    head.appendChild(bt);
+    day.appendChild(head);
 
     C.refeicoes.forEach(function(ref){
       var r = d.refeicoes[ref];
@@ -248,11 +556,15 @@ function render(){
       var snack = ref === 'lanche_escola';
       var m = document.createElement('div');
       m.className = 'meal' + (snack ? ' snack' : '') + (ref === 'almoco' ? ' main' : '');
-      var fav = (r.tags || []).indexOf('favorito_criancas') >= 0 ? ' <span class="fav">★</span>' : '';
+      var id = pratoDe(d, ref);
+      var rec = C.receitas[id] || {};
+      var fav = rec.campeao ? ' <span class="fav">★</span>' : '';
+      var mud = (id !== r.prato) ? ' <span class="trocado">trocado</span>' : '';
       var html = '<div class="ml">' + (ICON[ref]||'') + ' ' + (C.rotulos[ref]||ref) + '</div>' +
-                 '<div class="dish" onclick="receita(\'' + r.prato + '\')">' + esc(r.nome) + fav + '</div>';
-      if ((r.acompanhamentos||[]).length) {
-        html += '<div class="side">com ' + r.acompanhamentos.map(function(a){
+                 '<div class="dish" onclick="receita(\'' + id + '\')">' + esc(nomeDe(id)) + fav + mud + '</div>';
+      if (ref === 'almoco'){
+        var acs = acompsDe(d);
+        if (acs.length) html += '<div class="side">com ' + acs.map(function(a){
           return '<span class="dish" style="font-size:12.5px" onclick="receita(\'' + a.prato + '\')">' + esc(a.nome) + '</span>';
         }).join(' · ') + '</div>';
       }
@@ -266,12 +578,13 @@ function render(){
 if (!C) {
   document.getElementById('obs').innerHTML = '<span class="err">Cardápio não carregou (data/cardapio.js). Rode dados/exportar_web.py.</span>';
 } else {
+  carregarEdits();
   document.getElementById('titulo').textContent = 'Cardápio de ' + MESES[C.mes-1] + ' de ' + C.ano;
   document.getElementById('obs').textContent = C.obs || '';
   var s = C.resumo || {};
-  var kp = [[s.dias, 'dias'], [s.receitas_distintas, 'receitas distintas'],
-            [s.dias_letivos, 'lanches de escola'], [s.favoritos_criancas_no_mes, 'pratos favoritos'],
-            [s.repertorio_disponivel, 'no repertório']];
+  var kp = [[s.dias, 'dias'], [s.receitas_distintas, 'receitas no mês'],
+            [s.dias_letivos, 'lanches de escola'], [s.favoritos_criancas_no_mes, 'pratos campeões'],
+            [Object.keys(C.receitas||{}).length, 'no banco']];
   document.getElementById('kpis').innerHTML = kp.filter(function(k){return k[0]!=null;})
     .map(function(k){ return '<div class="kpi"><b>' + k[0] + '</b><span>' + k[1] + '</span></div>'; }).join('');
   var p = s.almocos_por_proteina || {};
@@ -279,7 +592,8 @@ if (!C) {
     .sort(function(a,b){return p[b]-p[a];})
     .map(function(k){ return '<i>' + k.replace(/_/g,' ') + ' <b>' + p[k] + '</b></i>'; }).join('');
   document.getElementById('rodape').textContent =
-    'Gerado em ' + (C.gerado_em||'') + ' · ' + (C.versao||'') + ' · ★ = prato campeão das crianças · clique num prato para a receita completa';
+    'Gerado em ' + (C.gerado_em||'') + ' · ' + (C.versao||'') + ' · ★ = prato campeão das crianças · as trocas ficam neste navegador até você mandar o código';
+  banner();
   render();
 }
 </script>

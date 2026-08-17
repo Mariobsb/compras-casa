@@ -1,6 +1,6 @@
 (function(){
   if(sessionStorage.getItem('casa_ok')==='1') return;
-  var SENHA = atob('ZmFtaWxpYTIwMjY=');            // familia2026 — camada leve
+  var WORKER='https://precos-casa.automercadomario.workers.dev';   // a senha é conferida no servidor
   var ov = document.createElement('div');
   ov.style.cssText='position:fixed;inset:0;z-index:99999;background:#0F1613;display:flex;'
     +'align-items:center;justify-content:center;flex-direction:column;gap:14px;'
@@ -15,8 +15,12 @@
     +'<div id="_er" style="color:#E8896B;font-size:13px;height:16px"></div>';
   (document.body||document.documentElement).appendChild(ov);
   function go(){
-    if(document.getElementById('_pw').value===SENHA){ sessionStorage.setItem('casa_ok','1'); ov.remove(); }
-    else { document.getElementById('_er').textContent='senha incorreta'; }
+    var pw=document.getElementById('_pw').value, er=document.getElementById('_er');
+    er.style.color='#94A89D'; er.textContent='entrando…';
+    fetch(WORKER+'/entrar?senha='+encodeURIComponent(pw)).then(function(r){return r.json();}).then(function(j){
+      if(j&&j.ok){ sessionStorage.setItem('casa_ok','1'); if(j.token) localStorage.setItem('casa_token',j.token); location.reload(); }
+      else { er.style.color='#E8896B'; er.textContent='senha incorreta'; }
+    }).catch(function(){ er.style.color='#E8896B'; er.textContent='sem conexão — tente de novo'; });
   }
   ov.querySelector('#_go').onclick=go;
   ov.querySelector('#_pw').addEventListener('keydown',function(e){ if(e.key==='Enter') go(); });
