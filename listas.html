@@ -149,6 +149,8 @@
   .tic{font-size:25px;line-height:1}
   .tname{font-weight:700;font-size:14.5px;margin-top:8px}
   .tcount{font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-top:2px}
+  .tchip{background:var(--panel2);border:1px solid var(--line2);color:var(--muted);border-radius:999px;padding:6px 13px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--sans)}
+  .tchip.on{border-color:var(--accent);color:var(--accent);background:rgba(86,217,140,.1)}
 </style>
 </head>
 <body>
@@ -193,7 +195,7 @@
 
 var WORKER='https://precos-casa.automercadomario.workers.dev';
 var TKEY='casa_token', SKEY='casa_seg';
-var doc=null, seg='casa', abertos={}, listaAberta=null, orcamento=null, ocupado=false, novaView=false;
+var doc=null, seg='casa', abertos={}, listaAberta=null, orcamento=null, ocupado=false, novaView=false, editLista=null;
 var CATS=(window.__CATEGORIAS__||{categorias:[],chaves:[]});
 var CATPOR={}; CATS.categorias.forEach(function(c){CATPOR[c.id]=c;});
 
@@ -446,9 +448,68 @@ function adicionar(){
   ops([{op:'upsert_item',item:{nome:p.nome, qtd:p.qtd, un:p.un, cat:classificar(p.nome)}}]);
 }
 
+/* ---- EDITAR LISTA: nome, ícone, cor, tipo · duplicar · apagar ------------- */
+var TIPOS=['','evento','receita','viagem','mensal','festa'];
+var editEmoji='🛒', editCor='teal', editTipo='';
+function pintarEditarLista(id){
+  var l=doc.listas.filter(function(x){return x.id===id;})[0];
+  if(!l){ editLista=null; return pintarCompras(); }
+  editEmoji=l.emoji||'🛒'; editCor=l.cor||'teal'; editTipo=l.tipo||'';
+  var corpo=el('corpo');
+  corpo.innerHTML=
+    '<button class="back2" id="voltaredit">‹ '+esc(l.nome)+'</button>'
+    + '<h2 style="margin:6px 0 3px;font-size:20px">Editar lista</h2>'
+    + '<p class="qahint" style="margin-bottom:14px">Nome, ícone, cor e tipo — ou duplique para reaproveitar.</p>'
+    + '<div class="novabox">'
+    +   '<input id="ednome" value="'+esc(l.nome)+'" placeholder="Nome da lista" autocomplete="off">'
+    +   '<p class="nlabel">ícone</p><div class="pickrow" id="edemoji">'
+    +     EMOJIS.map(function(e){return '<button class="pemoji'+(e===editEmoji?' on':'')+'" data-e="'+e+'">'+e+'</button>';}).join('')
+    +   '</div>'
+    +   '<p class="nlabel">cor</p><div class="pickrow" id="edcor">'
+    +     Object.keys(CORES).map(function(c){return '<span class="pcor'+(c===editCor?' on':'')+'" data-c="'+c+'" style="background:'+corHex(c)+'"></span>';}).join('')
+    +   '</div>'
+    +   '<p class="nlabel">tipo</p><div class="pickrow" id="edtipo">'
+    +     TIPOS.map(function(t){return '<button class="tchip'+(t===editTipo?' on':'')+'" data-t="'+t+'">'+(t||'nenhum')+'</button>';}).join('')
+    +   '</div>'
+    +   '<button class="bt pri" id="edsalvar" style="width:100%;padding:12px">salvar</button>'
+    + '</div>'
+    + '<div style="display:flex;gap:8px;justify-content:space-between">'
+    +   '<button class="bt" id="edduplicar">⧉ duplicar</button>'
+    +   '<button class="bt del" id="edapagar">apagar lista</button>'
+    + '</div>';
+  el('voltaredit').onclick=function(){ editLista=null; pintar(); };
+  [].forEach.call(corpo.querySelectorAll('#edemoji .pemoji'),function(b){
+    b.onclick=function(){ editEmoji=b.getAttribute('data-e');
+      [].forEach.call(corpo.querySelectorAll('#edemoji .pemoji'),function(x){x.classList.toggle('on',x===b);}); };
+  });
+  [].forEach.call(corpo.querySelectorAll('#edcor .pcor'),function(b){
+    b.onclick=function(){ editCor=b.getAttribute('data-c');
+      [].forEach.call(corpo.querySelectorAll('#edcor .pcor'),function(x){x.classList.toggle('on',x===b);}); };
+  });
+  [].forEach.call(corpo.querySelectorAll('#edtipo .tchip'),function(b){
+    b.onclick=function(){ editTipo=b.getAttribute('data-t');
+      [].forEach.call(corpo.querySelectorAll('#edtipo .tchip'),function(x){x.classList.toggle('on',x===b);}); };
+  });
+  el('edsalvar').onclick=function(){
+    var nome=el('ednome').value.trim(); if(!nome){ el('ednome').focus(); return; }
+    editLista=null;
+    ops([{op:'set_lista', id:l.id, nome:nome, emoji:editEmoji, cor:editCor, tipo:editTipo}]);
+  };
+  el('edduplicar').onclick=function(){
+    var itens=(l.itens||[]).map(function(i){ return {id:i.id, ref:i.ref||null, nome:i.nome, marca:i.marca||'', qtd:i.qtd, un:i.un, cat:i.cat, ean:i.ean, ok:false}; });
+    editLista=null;
+    ops([{op:'nova_lista', nome:'Cópia de '+l.nome, emoji:l.emoji||'', cor:l.cor||'', tipo:l.tipo||'', itens:itens}])
+      .then(function(j){ listaAberta=j.ids[0]; pintar(); });
+  };
+  el('edapagar').onclick=function(){
+    if(confirm('Apagar a lista "'+l.nome+'"?')){ editLista=null; listaAberta=null; ops([{op:'del_lista',id:l.id}]); }
+  };
+}
+
 /* ---- 2. COMPRAS ---------------------------------------------------------- */
 function pintarCompras(){
   var corpo=el('corpo');
+  if(editLista) return pintarEditarLista(editLista);
   if(listaAberta) return pintarLista(listaAberta);
   if(novaView) return pintarNovaLista();
   corpo.innerHTML=
@@ -493,7 +554,7 @@ function pintarLista(id){
       }).join('')
       : '<div class="vazio">Lista vazia.<br>Adicione itens aí em cima, ou puxe da lista da casa.</div>')
     + '<div class="fab">'
-    +   '<button class="bt del" id="apagarl">apagar</button>'
+    +   '<button class="bt" id="editarl">✎ editar</button>'
     +   '<button class="bt pri" id="orcar">💰 orçar nos mercados</button>'
     + '</div>';
   el('voltar').onclick=function(){ listaAberta=null; orcamento=null; pintar(); };
@@ -502,9 +563,7 @@ function pintarLista(id){
   el('qal').addEventListener('keydown',function(e){ if(e.key==='Enter') qalAdd(); });
   el('qalb').onclick=qalAdd;
   el('orcar').onclick=function(){ orcar(l); };
-  el('apagarl').onclick=function(){
-    if(confirm('Apagar a lista "'+l.nome+'"?')){ listaAberta=null; ops([{op:'del_lista',id:l.id}]); }
-  };
+  el('editarl').onclick=function(){ editLista=l.id; pintar(); };
   [].forEach.call(corpo.querySelectorAll('[data-litem]'),function(d){
     d.onclick=function(){
       var ref=d.getAttribute('data-litem');
