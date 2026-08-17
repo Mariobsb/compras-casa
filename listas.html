@@ -151,6 +151,7 @@
   .tcount{font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-top:2px}
   .tchip{background:var(--panel2);border:1px solid var(--line2);color:var(--muted);border-radius:999px;padding:6px 13px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--sans)}
   .tchip.on{border-color:var(--accent);color:var(--accent);background:rgba(86,217,140,.1)}
+  .orchead{display:flex;align-items:center;justify-content:space-between;margin:16px 0 -2px;font-family:var(--mono);font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint)}
 </style>
 </head>
 <body>
@@ -534,6 +535,10 @@ function pintarCompras(){
 function pintarLista(id){
   var l=doc.listas.filter(function(x){return x.id===id;})[0];
   if(!l){ listaAberta=null; return pintarCompras(); }
+  if(!orcamento || orcamento.lista!==id){   // reabre o orçamento salvo desta lista (por aparelho)
+    orcamento=null;
+    try{ var _sv=localStorage.getItem('casa_orc_'+id); if(_sv){ orcamento=JSON.parse(_sv); orcamento.lista=id; } }catch(e){}
+  }
   var corpo=el('corpo'), grupos=porCategoria(l.itens);
   corpo.innerHTML=
     '<button class="bt" id="voltar">‹ listas</button>'
@@ -564,6 +569,7 @@ function pintarLista(id){
   el('qalb').onclick=qalAdd;
   el('orcar').onclick=function(){ orcar(l); };
   el('editarl').onclick=function(){ editLista=l.id; pintar(); };
+  var _oc=el('ocultarorc'); if(_oc) _oc.onclick=function(){ orcamento=null; try{ localStorage.removeItem('casa_orc_'+l.id); }catch(e){} pintar(); };
   [].forEach.call(corpo.querySelectorAll('[data-litem]'),function(d){
     d.onclick=function(){
       var ref=d.getAttribute('data-litem');
@@ -658,7 +664,15 @@ function porta(){
    ele recebe tudo que precisa aqui e devolve o resultado por setOrcamento(). */
 window.CASA={
   WORKER:WORKER, esc:esc, money:money,
-  setOrcamento:function(o){ orcamento=o; pintar(); },
+  setOrcamento:function(o){
+    orcamento=o;
+    if(o){ o.lista=listaAberta;
+      // resultado pronto: guarda POR APARELHO (o orçamento depende dos mercados
+      // escolhidos, que já são locais) — assim reabre sem reorçar.
+      if(o.res){ o.em=o.em||Date.now();
+        try{ localStorage.setItem('casa_orc_'+listaAberta, JSON.stringify({res:o.res, em:o.em, lista:listaAberta})); }catch(e){} } }
+    pintar();
+  },
   repintar:pintar
 };
 window.CASA_OPS=ops;   // o orçamento grava o melhor preço de cada item pela mesma via
@@ -666,8 +680,21 @@ function orcar(l){
   if(!window.orcarLista) return alert('módulo de orçamento não carregou.');
   window.orcarLista(l, window.CASA);
 }
+function haQuanto(ts){
+  var s=Math.floor((Date.now()-ts)/1000);
+  if(s<90) return 'agora'; var mn=Math.floor(s/60);
+  if(mn<60) return 'há '+mn+' min'; var h=Math.floor(mn/60);
+  if(h<24) return 'há '+h+'h'; var d=Math.floor(h/24);
+  return d===1?'ontem':'há '+d+' dias';
+}
 function pintarOrcamento(o){
-  return window.orcamentoHTML? window.orcamentoHTML(o, window.CASA) : '';
+  var inner=window.orcamentoHTML? window.orcamentoHTML(o, window.CASA) : '';
+  if(!inner) return '';
+  if(o && o.res){   // resultado: cabeçalho com quando foi orçado + botão ocultar
+    return '<div class="orchead"><span>orçamento'+(o.em?' · '+haQuanto(o.em):'')+'</span>'
+      + '<button class="bt" id="ocultarorc" style="padding:4px 11px;font-size:12px">ocultar</button></div>'+inner;
+  }
+  return inner;   // progresso/erro: sem cabeçalho
 }
 carregar();
 })();
