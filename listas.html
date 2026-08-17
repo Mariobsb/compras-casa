@@ -129,6 +129,26 @@
   .porta input{width:100%;background:var(--panel2);border:1px solid var(--line2);border-radius:12px;color:var(--ink);
     font-family:var(--mono);font-size:15px;padding:13px 15px;text-align:center;outline:none;margin:14px 0}
   .porta input:focus{border-color:var(--accent)}
+
+  /* ---- identidade das listas + nova lista (Fase 1) ---- */
+  .lbadge{width:44px;height:44px;flex:0 0 44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px}
+  .ltype{font-family:var(--mono);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;padding:1px 6px;border-radius:5px;border:1px solid;margin-left:7px;vertical-align:middle}
+  .back2{background:none;border:none;color:var(--accent);font:inherit;font-size:13px;font-weight:600;cursor:pointer;padding:2px 0;margin-bottom:6px}
+  .novabox{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:20px}
+  .novabox input{width:100%;background:var(--panel2);border:1px solid var(--line2);border-radius:10px;color:var(--ink);font:inherit;font-size:15px;padding:11px 12px;outline:none;margin-bottom:12px}
+  .novabox input:focus{border-color:var(--accent)}
+  .nlabel{font-family:var(--mono);font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.08em;margin:0 0 7px}
+  .pickrow{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:13px}
+  .pemoji{width:38px;height:38px;border-radius:10px;border:1px solid var(--line2);background:var(--panel2);font-size:19px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .pemoji.on{border-color:var(--accent);background:rgba(86,217,140,.12)}
+  .pcor{width:27px;height:27px;border-radius:50%;cursor:pointer;border:2px solid transparent;box-sizing:border-box}
+  .pcor.on{border-color:var(--ink);box-shadow:0 0 0 2px var(--bg),0 0 0 3px var(--ink)}
+  .tgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:2px}
+  .tcard{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:14px 13px;cursor:pointer;text-align:left;font:inherit;color:inherit;display:flex;flex-direction:column}
+  .tcard:hover{border-color:var(--line2)}
+  .tic{font-size:25px;line-height:1}
+  .tname{font-weight:700;font-size:14.5px;margin-top:8px}
+  .tcount{font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-top:2px}
 </style>
 </head>
 <body>
@@ -173,9 +193,85 @@
 
 var WORKER='https://precos-casa.automercadomario.workers.dev';
 var TKEY='casa_token', SKEY='casa_seg';
-var doc=null, seg='casa', abertos={}, listaAberta=null, orcamento=null, ocupado=false;
+var doc=null, seg='casa', abertos={}, listaAberta=null, orcamento=null, ocupado=false, novaView=false;
 var CATS=(window.__CATEGORIAS__||{categorias:[],chaves:[]});
 var CATPOR={}; CATS.categorias.forEach(function(c){CATPOR[c.id]=c;});
+
+/* ---- identidade das listas + modelos (Fase 1: listas customizadas) --------- */
+var CORES={verde:'#56D98C',amber:'#E7B24C',teal:'#5CC7C2',coral:'#E8896B',violet:'#B79CED',blue:'#6EA8E8',rosa:'#E48AB4'};
+var EMOJIS=['🛒','🔥','🎉','🍳','🎂','🍕','🥞','🍷','🏖️','✈️','🎄','🧺','🐶','⚽','📦'];
+var TEMPLATES=[
+  {emoji:'🔥',cor:'coral',tipo:'evento',nome:'Churrasco',itens:['Picanha 2 kg','Linguiça 1 kg','Carvão 5 kg','Cerveja x12','Pão de alho 2 un','Sal grosso','Farofa pronta','Refrigerante 2 L','Gelo 3 kg','Tomate 1 kg','Cebola 1 kg','Limão 6 un']},
+  {emoji:'🎉',cor:'violet',tipo:'evento',nome:'Aniversário',itens:['Bolo','Refrigerante x4','Suco 2 L','Salgadinhos','Docinhos','Velas','Guardanapo','Copo descartável','Prato descartável','Gelo 3 kg']},
+  {emoji:'✈️',cor:'blue',tipo:'viagem',nome:'Viagem',itens:['Água x6','Bolacha','Barra de cereal','Fruta','Suco','Salgadinho','Protetor solar','Papel higiênico']},
+  {emoji:'🥞',cor:'amber',tipo:'evento',nome:'Café especial',itens:['Pão francês','Queijo','Presunto','Manteiga','Ovos 12 un','Café','Leite 1 L','Suco de laranja','Frutas','Iogurte']},
+  {emoji:'🛒',cor:'teal',tipo:'',nome:'Em branco',itens:[]},
+];
+function corHex(c){ return CORES[c]||CORES.verde; }
+function tintCor(c,a){ var h=corHex(c).replace('#',''); return 'rgba('+parseInt(h.slice(0,2),16)+','+parseInt(h.slice(2,4),16)+','+parseInt(h.slice(4,6),16)+','+a+')'; }
+function slugc(s){ return ((s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40))||'item'; }
+/** transforma linhas de texto ("Picanha 2 kg") em itens de lista com id e categoria */
+function itensDeTexto(arr){
+  var usados={}, out=[];
+  (arr||[]).forEach(function(txt){
+    var p=parseQuickAdd(txt), id=slugc(p.nome), n=2;
+    while(usados[id]) id=slugc(p.nome)+'-'+(n++);
+    usados[id]=1;
+    out.push({id:id, ref:null, nome:p.nome, marca:'', qtd:p.qtd, un:p.un, cat:classificar(p.nome), ok:false});
+  });
+  return out;
+}
+var novaEmoji='🛒', novaCor='teal';   // seleção do "montar do zero"
+
+/* ---- NOVA LISTA: montar do zero (com identidade) ou por modelo ------------- */
+function pintarNovaLista(){
+  var corpo=el('corpo');
+  var h='<button class="back2" id="voltarnova">‹ minhas listas</button>'
+    + '<h2 style="margin:6px 0 3px;font-size:20px">Nova lista</h2>'
+    + '<p class="qahint" style="margin-bottom:14px">Monte do zero com uma cara própria, ou comece por um modelo.</p>'
+    + '<div class="novabox">'
+    +   '<input id="nlnome" placeholder="Nome — ex.: Churrasco de domingo" autocomplete="off">'
+    +   '<p class="nlabel">ícone</p><div class="pickrow" id="nlemoji">'
+    +     EMOJIS.map(function(e){return '<button class="pemoji'+(e===novaEmoji?' on':'')+'" data-e="'+e+'">'+e+'</button>';}).join('')
+    +   '</div>'
+    +   '<p class="nlabel">cor</p><div class="pickrow" id="nlcor">'
+    +     Object.keys(CORES).map(function(c){return '<span class="pcor'+(c===novaCor?' on':'')+'" data-c="'+c+'" style="background:'+corHex(c)+'"></span>';}).join('')
+    +   '</div>'
+    +   '<button class="bt pri" id="nlcriar" style="width:100%;padding:12px">criar lista</button>'
+    + '</div>'
+    + '<p class="nlabel">modelos prontos</p><div class="tgrid">'
+    + TEMPLATES.map(function(t,k){
+        return '<button class="tcard" data-tpl="'+k+'"><span class="tic" style="color:'+corHex(t.cor)+'">'+t.emoji+'</span>'
+          + '<span class="tname">'+esc(t.nome)+'</span><span class="tcount">'+(t.itens.length?t.itens.length+' itens':'do zero')+'</span></button>';
+      }).join('')
+    + '</div>';
+  corpo.innerHTML=h;
+  el('voltarnova').onclick=function(){ novaView=false; pintar(); };
+  [].forEach.call(corpo.querySelectorAll('#nlemoji .pemoji'),function(b){
+    b.onclick=function(){ novaEmoji=b.getAttribute('data-e');
+      [].forEach.call(corpo.querySelectorAll('#nlemoji .pemoji'),function(x){x.classList.toggle('on',x===b);}); };
+  });
+  [].forEach.call(corpo.querySelectorAll('#nlcor .pcor'),function(b){
+    b.onclick=function(){ novaCor=b.getAttribute('data-c');
+      [].forEach.call(corpo.querySelectorAll('#nlcor .pcor'),function(x){x.classList.toggle('on',x===b);}); };
+  });
+  el('nlcriar').onclick=function(){
+    var nome=el('nlnome').value.trim(); if(!nome){ el('nlnome').focus(); return; }
+    novaView=false;
+    ops([{op:'nova_lista', nome:nome, emoji:novaEmoji, cor:novaCor, tipo:''}]).then(function(j){ listaAberta=j.ids[0]; pintar(); });
+  };
+  [].forEach.call(corpo.querySelectorAll('[data-tpl]'),function(b){
+    b.onclick=function(){
+      var t=TEMPLATES[+b.getAttribute('data-tpl')];
+      var nome=prompt('Nome da lista:', t.nome==='Em branco'?'':t.nome);
+      if(nome===null) return;
+      nome=(nome.trim()||t.nome);
+      novaView=false;
+      ops([{op:'nova_lista', nome:nome, emoji:t.emoji, cor:t.cor, tipo:t.tipo, itens:itensDeTexto(t.itens)}])
+        .then(function(j){ listaAberta=j.ids[0]; pintar(); });
+    };
+  });
+}
 
 var el=function(id){return document.getElementById(id);};
 var esc=function(s){return (s==null?'':String(s)).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
@@ -354,23 +450,25 @@ function adicionar(){
 function pintarCompras(){
   var corpo=el('corpo');
   if(listaAberta) return pintarLista(listaAberta);
+  if(novaView) return pintarNovaLista();
   corpo.innerHTML=
     (doc.listas.length? doc.listas.slice().reverse().map(function(l){
       var n=l.itens.length, ok=l.itens.filter(function(i){return i.ok;}).length;
-      return '<div class="lcard" data-lista="'+l.id+'"><div style="flex:1;min-width:0"><b>'+esc(l.nome)+'</b>'
-        + '<div class="lm">'+n+' itens'+(ok?' · '+ok+' no carrinho':'')+' · '+(l.criada_em||'').slice(0,10)+'</div>'
-        + (ok?'<div class="prog"><i style="width:'+Math.round(ok/n*100)+'%"></i></div>':'')
+      var cor=l.cor||'verde', pct=n?Math.round(ok/n*100):0;
+      return '<div class="lcard" data-lista="'+l.id+'">'
+        + '<span class="lbadge" style="background:'+tintCor(cor,.16)+';box-shadow:inset 0 0 0 1px '+tintCor(cor,.42)+'">'+(l.emoji||'🛒')+'</span>'
+        + '<div style="flex:1;min-width:0"><b>'+esc(l.nome)+'</b>'
+        +   (l.tipo?'<span class="ltype" style="color:'+corHex(cor)+';border-color:'+tintCor(cor,.5)+'">'+esc(l.tipo)+'</span>':'')
+        + '<div class="lm">'+n+' iten'+(n===1?'':'s')+(ok?' · '+ok+' no carrinho':'')+' · '+(l.criada_em||'').slice(0,10)+'</div>'
+        + (ok?'<div class="prog"><i style="width:'+pct+'%;background:'+corHex(cor)+'"></i></div>':'')
         + '</div><span class="seta">›</span></div>';
     }).join('')
-    : '<div class="vazio">Nenhuma lista de compras ainda.<br>Gere uma a partir da lista da casa ou do que está em falta.</div>')
+    : '<div class="vazio">Nenhuma lista ainda.<br>Crie uma para uma festa, uma receita, uma viagem — ou gere da lista da casa.</div>')
     + '<div class="fab"><button class="bt pri" id="nova">＋ nova lista</button></div>';
   [].forEach.call(corpo.querySelectorAll('[data-lista]'),function(d){
     d.onclick=function(){ listaAberta=d.getAttribute('data-lista'); orcamento=null; pintar(); };
   });
-  el('nova').onclick=function(){
-    var nome=prompt('Nome da lista:','Compras '+new Date().toLocaleDateString('pt-BR').slice(0,5));
-    if(nome) ops([{op:'nova_lista',nome:nome}]).then(function(j){ listaAberta=j.ids[0]; pintar(); });
-  };
+  el('nova').onclick=function(){ novaView=true; pintar(); };
 }
 function pintarLista(id){
   var l=doc.listas.filter(function(x){return x.id===id;})[0];
@@ -378,8 +476,9 @@ function pintarLista(id){
   var corpo=el('corpo'), grupos=porCategoria(l.itens);
   corpo.innerHTML=
     '<button class="bt" id="voltar">‹ listas</button>'
-    + '<h2 style="margin:14px 0 4px;font-size:20px">'+esc(l.nome)+'</h2>'
-    + '<p class="qahint">'+l.itens.length+' itens · toque para marcar no carrinho</p>'
+    + '<h2 style="margin:14px 0 4px;font-size:20px">'+(l.emoji?esc(l.emoji)+' ':'')+esc(l.nome)+'</h2>'
+    + '<p class="qahint">'+l.itens.length+' iten'+(l.itens.length===1?'':'s')+' · toque para marcar no carrinho</p>'
+    + '<div class="qa"><input id="qal" placeholder="Adicionar a esta lista — ex.: 2 refrigerante"><button id="qalb" title="adicionar">＋</button></div>'
     + (orcamento? pintarOrcamento(orcamento) : '')
     + (l.itens.length? grupos.map(function(g){
         return '<div class="grupo">'+cabecalho(g.cat,g.itens.length)
@@ -392,12 +491,16 @@ function pintarLista(id){
               + '<span class="iqtd">'+esc(i.qtd)+' '+esc(i.un)+'</span></div>';
           }).join('')+'</div></div>';
       }).join('')
-      : '<div class="vazio">Lista vazia.<br>Adicione itens pela lista da casa.</div>')
+      : '<div class="vazio">Lista vazia.<br>Adicione itens aí em cima, ou puxe da lista da casa.</div>')
     + '<div class="fab">'
     +   '<button class="bt del" id="apagarl">apagar</button>'
     +   '<button class="bt pri" id="orcar">💰 orçar nos mercados</button>'
     + '</div>';
   el('voltar').onclick=function(){ listaAberta=null; orcamento=null; pintar(); };
+  var qalAdd=function(){ var c=el('qal'), t=c.value.trim(); if(!t) return; var p=parseQuickAdd(t); c.value=''; c.focus();
+    ops([{op:'item_lista', lista:l.id, nome:p.nome, qtd:p.qtd, un:p.un, cat:classificar(p.nome)}]); };
+  el('qal').addEventListener('keydown',function(e){ if(e.key==='Enter') qalAdd(); });
+  el('qalb').onclick=qalAdd;
   el('orcar').onclick=function(){ orcar(l); };
   el('apagarl').onclick=function(){
     if(confirm('Apagar a lista "'+l.nome+'"?')){ listaAberta=null; ops([{op:'del_lista',id:l.id}]); }
